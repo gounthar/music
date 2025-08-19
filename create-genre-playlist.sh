@@ -94,7 +94,7 @@ guess_genre_from_artist() {
 }
 
 echo "Processing MP3 files to create playlists..."
-find . -type f -name "*.mp3" | while read -r file; do
+find . -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
     filename="${file#./}"
     
     # Create artist playlist
