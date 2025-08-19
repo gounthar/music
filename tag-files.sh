@@ -23,11 +23,8 @@ CONFIG_FILE="${BEETS_CONFIG_FILE:-$HOME/.config/beets/config.yaml}"
 if [ ! -f "$CONFIG_FILE" ]; then
 mkdir -p "$(dirname "$CONFIG_FILE")"
 cat > "$CONFIG_FILE" <<EOL
-else
-    echo "Beets config already exists at: $CONFIG_FILE — leaving it unchanged."
-fi
 # ~/.config/beets/config.yaml
-directory: /mnt/c/Users/User/Music/mp3/result
+directory: $OUTPUT_DIR
 library: ~/.config/beets/musiclibrary.db
 
 import:
@@ -63,14 +60,17 @@ musicbrainz:
     genres: yes
 
 paths:
-    default: $artist/$album/$track $title
-    singleton: Non-Album/$artist/$title
-    comp: Compilations/$album/$track $title
+    default: \$artist/\$album/\$track \$title
+    singleton: Non-Album/\$artist/\$title
+    comp: Compilations/\$album/\$track \$title
 
 # Discogs token (replace with yours)
 discogs:
     token: YOUR_DISCOGS_TOKEN
 EOL
+else
+    echo "Beets config already exists at: $CONFIG_FILE — leaving it unchanged."
+fi
 
 # Run import (fully non-interactive)
 beet import -A "$MUSIC_SOURCE"  # -A: auto-apply matches
