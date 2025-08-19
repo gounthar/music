@@ -1,7 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-cd "${1:-/mnt/c/Users/User/Music/mp3/result}"
+TARGET_DIR="${1:-${TARGET_DIR:-./}}"
+cd "$TARGET_DIR"
 
 # 1. Check what genre playlists actually exist
 echo "Genre playlists found:"
@@ -11,13 +12,13 @@ echo ""
 # 2. Check the content of a few genre playlists
 if [ -f "genre_Unknown_Genre.m3u" ]; then
     echo "Unknown_Genre playlist sample:"
-    head -3 "genre_Unknown_Genre.m3u"
+    cat "genre_Unknown_Genre.m3u"
     echo ""
 fi
 
 # 3. Check what genres beets is actually finding for some files
 echo "Testing genre extraction on a few files:"
-find . -maxdepth 1 -name "*.mp3" | head -5 | while read -r file; do
+find . -maxdepth 1 -name "*.mp3" | while read -r file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     beet list path:"$(realpath "$filename")" -f '$genre' 2>/dev/null || echo "No genre found in beets"
@@ -26,7 +27,7 @@ echo ""
 
 # 4. Check if files have multiple genres in their ID3 tags
 echo "Checking ID3 tags for multiple genres:"
-find . -maxdepth 1 -name "*.mp3" | head -5 | while read -r file; do
+find . -maxdepth 1 -name "*.mp3" | while read -r file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     if command -v mid3v2 &> /dev/null; then
