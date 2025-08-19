@@ -1,5 +1,5 @@
 # Set the source and destination folders
-$src = 'C:\Users\User\Music\mp3'
+$src = 'C:\Users\User\Music\mp3\result'
 $dst = 'D:\music'
 
 # Create destination directory if it doesn't exist
