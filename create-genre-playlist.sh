@@ -9,6 +9,13 @@ cd "$MUSIC_DIR"
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
+# Sanitize a string for safe playlist filenames
+sanitize_filename() {
+    local input="$1"
+    # trim, remove commas/slashes/quotes/colons, replace spaces with underscores
+    echo "$input" | xargs | sed 's/[,\/]//g' | tr ' ' '_' | tr -d ':"'"'"''
+}
+
 # Function to extract artist name
 get_artist() {
     local file="$1"
@@ -99,7 +106,7 @@ find . -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
     
     # Create artist playlist
     artist=$(get_artist "$file")
-    clean_artist=$(echo "$artist" | sed 's/[,/]//g' | tr ' ' '_' | tr -d ':''"'"'"'')
+    clean_artist=$(sanitize_filename "$artist")
     echo "$filename" >> "$TEMP_DIR/artist_${clean_artist}.m3u"
     
     # Create genre playlist - FIXED TO HANDLE BOTH COMMA AND SEMICOLON
@@ -108,7 +115,7 @@ find . -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
     genre=$(echo "$genre" | tr ';' ',')
     IFS=',' read -ra genre_array <<< "$genre"
     for single_genre in "${genre_array[@]}"; do
-        clean_genre=$(echo "$single_genre" | xargs | sed 's/[,/]//g' | tr ' ' '_' | tr -d ':''"'"'"'')
+        clean_genre=$(sanitize_filename "$single_genre")
         if [[ -n "$clean_genre" ]]; then
             echo "$filename" >> "$TEMP_DIR/genre_${clean_genre}.m3u"
         fi
