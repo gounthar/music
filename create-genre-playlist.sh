@@ -23,7 +23,8 @@ get_artist() {
     
     # Try beets first
     if command -v beet &> /dev/null; then
-        local abs_path=$(realpath "$file")
+        local abs_path
+        abs_path=$(realpath "$file")
         artist=$(beet list path:"$abs_path" -f '$artist' | head -n1 | xargs)
     fi
     
@@ -50,7 +51,8 @@ get_genre() {
     
     # Try beets first
     if command -v beet &> /dev/null; then
-        local abs_path=$(realpath "$file")
+        local abs_path
+        abs_path=$(realpath "$file")
         genre=$(beet list path:"$abs_path" -f '$genre' | head -n1 | xargs)
     fi
     
@@ -65,7 +67,8 @@ get_genre() {
 
     if [[ -z "$genre" ]]; then
         # Try to guess genre from artist name or other metadata
-        local artist=$(get_artist "$file")
+        local artist
+        artist=$(get_artist "$file")
         genre=$(guess_genre_from_artist "$artist")
     fi
     
