@@ -142,6 +142,5 @@ for playlist in "$TEMP_DIR"/*.m3u; do
     mv -f "$playlist" "$PLAYLIST_DIR/$playlist_name"
 done
 
-rm -rf "$TEMP_DIR"
 echo "Playlists created in: $PLAYLIST_DIR"
 find "$PLAYLIST_DIR" -maxdepth 1 -type f -name "*.m3u" -print0 | xargs -0 -r ls -la | head -10
