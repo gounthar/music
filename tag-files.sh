@@ -22,24 +22,46 @@ OUTPUT_DIR="${OUTPUT_DIR:-$LOSSLESS_DIR}"
 CONFIG_FILE="$HOME/.config/beets/config.yaml"
 mkdir -p "$(dirname "$CONFIG_FILE")"
 cat > "$CONFIG_FILE" <<EOL
-directory: $OUTPUT_DIR
-paths:
-    default: \$artist/\$album/\$track \$title
-    singleton: Non-Album/\$artist/\$title
-    comp: Compilations/\$album/\$track \$title
-plugins: fetchart lyrics lastgenre discogs
+# ~/.config/beets/config.yaml
+directory: /mnt/c/Users/User/Music/mp3/result
+library: ~/.config/beets/musiclibrary.db
 
 import:
-    move: yes
-    quiet: yes
-    timid: no           # Disable all prompts
-    autotag: yes        # Auto-tag high-confidence matches
-    resume: no          # Don't ask to resume
-    skip_errors: yes    # Skip files with errors
+    copy: yes
+    write: yes
+    move: no
+    resume: no
+    incremental: yes
 
-# Non-interactive behavior for unmatched files
-unmatched:
-    quiet: yes          # Silence "no match" warnings
+# Updated plugins - removed acousticbrainz, added lastgenre
+plugins: fetchart lyrics lastgenre discogs
+
+fetchart:
+    auto: yes
+    minwidth: 0
+
+lyrics:
+    auto: yes
+    sources: genius musixmatch google
+
+# LastGenre plugin for better genre detection
+lastgenre:
+    auto: yes           # Automatically fetch genres during import
+    source: album       # Use album-level genre information
+    count: 3            # Get up to 3 genres per track
+    separator: ', '     # Separate multiple genres with commas
+    canonical: yes      # Use canonical genre names
+    fallback: Unknown_Genre
+    min_weight: 10      # Minimum weight threshold for genres
+
+# Optional: MusicBrainz integration for better metadata
+musicbrainz:
+    genres: yes
+
+paths:
+    default: $artist/$album/$track $title
+    singleton: Non-Album/$artist/$title
+    comp: Compilations/$album/$track $title
 
 # Discogs token (replace with yours)
 discogs:
