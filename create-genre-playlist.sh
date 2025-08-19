@@ -100,8 +100,10 @@ find . -type f -name "*.mp3" | while read -r file; do
     clean_artist=$(echo "$artist" | sed 's/[,/]//g' | tr ' ' '_' | tr -d ':''"'"'"'')
     echo "$filename" >> "$TEMP_DIR/artist_${clean_artist}.m3u"
     
-    # Create genre playlist
+    # Create genre playlist - FIXED TO HANDLE BOTH COMMA AND SEMICOLON
     genre=$(get_genre "$file")
+    # Replace semicolons with commas first, then split by commas
+    genre=$(echo "$genre" | tr ';' ',')
     IFS=',' read -ra genre_array <<< "$genre"
     for single_genre in "${genre_array[@]}"; do
         clean_genre=$(echo "$single_genre" | xargs | sed 's/[,/]//g' | tr ' ' '_' | tr -d ':''"'"'"'')
