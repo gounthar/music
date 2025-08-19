@@ -7,6 +7,7 @@ PLAYLIST_DIR="${2:-$MUSIC_DIR}"
 mkdir -p "$PLAYLIST_DIR"
 cd "$MUSIC_DIR"
 TEMP_DIR=$(mktemp -d)
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Function to extract artist name
 get_artist() {
