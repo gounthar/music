@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 mkdir -p result
 declare -A file_hashes  # Associative array to track seen hashes
 
@@ -7,7 +8,7 @@ find . -mindepth 2 -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file
     content_hash=$(md5sum "$filepath" | cut -d' ' -f1)
     
     # Skip if we've seen this content before (exact duplicate)
-    if [[ -n "${file_hashes[$content_hash]}" ]]; then
+    if [[ -v file_hashes[$content_hash] ]]; then
         echo "Skipping duplicate: $filepath (same as ${file_hashes[$content_hash]})"
         continue
     fi
