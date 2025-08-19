@@ -9,8 +9,8 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
+    ensure_deps python3 pip mid3v2 || { echo "Missing dependencies (python3/pip/mid3v2)"; exit 1; }
     add_user_local_bin_to_path
-    ensure_deps python3 pip mid3v2
 fi
 
 # Global defaults (can be overridden by env or args)
