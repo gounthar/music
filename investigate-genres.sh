@@ -30,7 +30,7 @@ find . -maxdepth 1 -name "*.mp3" | head -5 | while read -r file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     if command -v mid3v2 &> /dev/null; then
-        mid3v2 -l "$filename" | grep -i "TCON" | head -1 || echo "No genre tag found"
+        mid3v2 -l "$filename" | grep -i "TCON" || echo "No genre tag found"
     elif command -v exiftool &> /dev/null; then
         exiftool -b -Genre "$filename" || echo "No genre tag found"
     else
