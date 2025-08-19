@@ -2,14 +2,7 @@
 
 This repository provides a set of Bash scripts to take a collection of untagged audio files and turn them into a clean, tagged, and organized MP3 library, complete with playlists and (optionally) beets library integration. It is designed for Linux and Windows users via WSL (Windows Subsystem for Linux).
 
-The typical pipeline is:
-1) Tag and import untagged audio (to-sort) into a curated lossless library
-2) Convert or consolidate audio to MP3 into a structured MP3 tree
-3) Flatten MP3 tree to a single result/ directory for portable consumption
-4) Generate artist- and genre-based playlists
-5) Optionally re-import MP3 tree into beets
-
-You can run just the parts you need; each script is designed to be individually useful.
+The scripts now work from anywhere (any working directory) and use environment-driven defaults for locations. You can override these defaults via environment variables or positional arguments where supported.
 
 ---
 
@@ -49,6 +42,7 @@ Flags:
 - --no-sudo: do not use sudo; prints commands to run manually
 - --pip-system: install Python packages system-wide instead of per-user
 - --dry-run: print actions without executing
+- --use-venv / --venv DIR: create/use a virtual environment and install Python deps inside it
 
 Environment equivalents:
 - NO_SUDO=1, ENSURE_PIP_SYSTEM=1, DRY_RUN=1
@@ -89,25 +83,32 @@ Behavior:
 
 ---
 
-## Directory Conventions and Defaults
+## Directory Conventions and Defaults (work-from-anywhere)
 
-These defaults are used in the scripts (customize as needed):
+The scripts no longer assume you run them from specific directories. They use these environment-driven defaults:
 
-- to-sort (source of untagged): `/mnt/c/Users/User/Music/to-sort`
-- Lossless library root: `/mnt/c/Users/User/Music/lossless`
-- MP3 tree root: `/mnt/c/Users/User/Music/mp3`
-- Flat MP3 output (from MP3 root): `mp3/result`
+- TO_SORT_DIR (untagged input): `/mnt/c/Users/User/Music/to-sort`
+- LOSSLESS_DIR (organized/tagged lossless): `/mnt/c/Users/User/Music/lossless`
+- MP3_DIR (organized/tagged MP3 tree): `/mnt/c/Users/User/Music/mp3`
+- FLAT_DIR (flattened MP3 output): `/mnt/c/Users/User/Music/Bonneville`  ← replaces the old `mp3/result`
 
-How to customize:
-- Many scripts have variables near the top (e.g., MUSIC_ROOT, MP3_ROOT, MUSIC_DIR).
-- Some scripts accept arguments to override defaults (see each script reference below).
+Override any default by exporting the corresponding environment variable, or by passing positional arguments where supported (see per-script notes).
+
+Examples:
+```bash
+# Use a different flattened output directory for one run
+FLAT_DIR="/mnt/c/Users/User/Music/MyFlat" ./create-genre-playlist.sh
+
+# Override lossless/mp3 roots for conversion
+LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./music-converter.sh
+```
 
 ---
 
 ## Recommended End-to-End Workflow
 
 1) Tag and import untagged audio (non-interactive)
-- Use tag-files.sh to import from to-sort into a curated lossless library using beets. This both organizes files and adds them to your beets DB.
+- Use tag-files.sh to import from TO_SORT_DIR into a curated lossless library using beets. This both organizes files and adds them to your beets DB.
 
 2) Optional: Clean up duplicates created by prior tooling
 - Use de-duplicate.sh to remove duplicate files such as “Track (1).mp3” if they match original content.
@@ -119,16 +120,16 @@ How to customize:
   - Simpler conversion with a “move existing MP3s” phase and conversion of missing MP3s.
 
 4) Flatten the MP3 tree for portable consumption
-- From the MP3 root, run flatten-directories.sh to create a single result/ directory with conflict-free filenames.
+- Run flatten-directories.sh to create a single flat directory at FLAT_DIR (default: `/mnt/c/Users/User/Music/Bonneville`) with conflict-free filenames.
 
-5) Generate playlists
-- Use create-genre-playlist.sh to generate genre_*.m3u and artist_*.m3u playlists (uses beets/mid3v2/exiftool).
+5) Generate playlists (against the flat directory by default)
+- Use create-genre-playlist.sh to generate genre_*.m3u and artist_*.m3u playlists.
 - Use create-artist-playlists.sh for a simpler artist-only playlist generation.
 
 6) Optional: Add MP3s to beets
 - If you also want the MP3 tree in your beets library:
   ```bash
-  beet import -A "/mnt/c/Users/User/Music/mp3"
+  beet import -A "$MP3_DIR"
   ```
 
 ---
@@ -144,17 +145,14 @@ Non-interactive beets import from a to-sort folder into an organized lossless li
 - Synopsis:
   - Writes a non-interactive beets config and runs `beet import -A "$MUSIC_SOURCE"` to auto-apply tag matches and move files into a structured lossless library.
 - Arguments:
-  - None. Edit variables in the script:
-    - `MUSIC_SOURCE` (default: `/mnt/c/Users/User/Music/to-sort`)
-    - `OUTPUT_DIR` (default: `/mnt/c/Users/User/Music/lossless`)
+  - None. Variables (env or inline):
+    - `TO_SORT_DIR` (default: `/mnt/c/Users/User/Music/to-sort`)
+    - `LOSSLESS_DIR` (default: `/mnt/c/Users/User/Music/lossless`)
+    - `MUSIC_SOURCE` (defaults to `TO_SORT_DIR`)
+    - `OUTPUT_DIR` (defaults to `LOSSLESS_DIR`)
 - Behavior:
-  - Checks if `beet` is installed; installs via `pip` if not present.
-  - Writes `~/.config/beets/config.yaml` with these defaults:
-    - `directory: $OUTPUT_DIR`
-    - `plugins: fetchart lyrics lastgenre discogs`
-    - `import.move: yes`, `import.quiet: yes`, `import.autotag: yes`, `skip_errors: yes`
-    - `unmatched.quiet: yes`
-    - `discogs.token: YOUR_DISCOGS_TOKEN` (placeholder)
+  - Optionally sources `lib/deps.sh` to ensure dependencies.
+  - Writes `~/.config/beets/config.yaml` with non-interactive defaults and plugins.
   - Runs `beet import -A "$MUSIC_SOURCE"` for automated tagging and import.
 - Outputs:
   - Tagged and organized files in `$OUTPUT_DIR`, available in your beets library.
@@ -162,8 +160,7 @@ Non-interactive beets import from a to-sort folder into an organized lossless li
   - Python3/pip, beets and plugins noted above.
 - Example:
   ```bash
-  # edit MUSIC_SOURCE/OUTPUT_DIR in script if needed
-  ./tag-files.sh
+  TO_SORT_DIR="/mnt/c/Users/User/Music/to-sort" LOSSLESS_DIR="/mnt/c/Users/User/Music/lossless" ./tag-files.sh
   ```
 - Safety:
   - The script overwrites `~/.config/beets/config.yaml`. Backup your config first if you have a custom setup.
@@ -177,7 +174,7 @@ Remove duplicate files suffixed with “ (n)” if content-identical to the orig
 - Synopsis:
   - Finds files with a “ (number)” suffix, compares size and content with non-suffixed original, and removes duplicates when identical.
 - Arguments:
-  - None. Edit `MUSIC_ROOT` in the script (default: `/mnt/c/Users/User/Music`).
+  - `MUSIC_ROOT` (env var; default: `/mnt/c/Users/User/Music`)
 - Behavior:
   - Uses `find` to locate candidates, `stat -c%s` to compare sizes, and `cmp -s` for content comparison.
   - Removes duplicate if content-identical; otherwise logs differences.
@@ -187,8 +184,7 @@ Remove duplicate files suffixed with “ (n)” if content-identical to the orig
   - `find`, `sed`, `stat`, `cmp`.
 - Example:
   ```bash
-  # edit MUSIC_ROOT to your tree root
-  ./de-duplicate.sh
+  MUSIC_ROOT="/mnt/c/Users/User/Music" ./de-duplicate.sh
   ```
 - Safety:
   - Destructive (removes files). Consider testing on a copy or snapshot.
@@ -200,24 +196,24 @@ Remove duplicate files suffixed with “ (n)” if content-identical to the orig
 Propagate updated scripts into a target tree based on modification time.
 
 - Synopsis:
-  - For each `.ps1` or `.sh` file in the current directory, find files with the same name under `TARGET_DIR` and copy if the source is newer.
+  - For each `.ps1` or `.sh` file in the current directory, find files with the same name under `TARGET_DIR` and copy if the source is newer. Also (by default) propagates each script’s sibling `lib/deps.sh`.
 - Arguments:
-  - None. Edit:
+  - None. Edit/override:
     - `SOURCE_DIR="."`
     - `TARGET_DIR="/mnt/c/Users/User/Music"`
+    - `COPY_LIB=1` (copy sibling lib/deps.sh when copying a .sh)
+    - `SYNC_BEFORE=1` (run `./sync-deps-lib.sh --quiet` before copying)
 - Behavior:
   - Recursively searches the target tree. Copies with `cp -p` if source is newer.
-  - If no matches are found, interactively prompts to copy to a specified location under `TARGET_DIR`.
+  - If no matches are found, optionally copy to a user-specified subdirectory (Enter for root).
 - Outputs:
   - Updated script files under `TARGET_DIR` where applicable.
 - Dependencies:
   - `find`, `cp`.
 - Example:
   ```bash
-  ./copy-if-newer.sh
+  TARGET_DIR="/mnt/c/Users/User/Music" ./copy-if-newer.sh
   ```
-- Safety:
-  - Copies files with preservation of timestamps. Answer prompts carefully.
 
 ---
 
@@ -251,8 +247,10 @@ Create and populate an MP3 tree from a lossless library (simple sequential appro
 - Synopsis:
   - Moves existing MP3s out of `MUSIC_ROOT` into `MP3_ROOT` and converts lossless files (FLAC/ALAC) that lack a corresponding MP3.
 - Configuration variables:
-  - `MUSIC_ROOT="/mnt/c/Users/User/Music/lossless"`
-  - `MP3_ROOT="$MUSIC_ROOT/../mp3"`
+  - `LOSSLESS_DIR` (default: `/mnt/c/Users/User/Music/lossless`)
+  - `MP3_DIR` (default: `/mnt/c/Users/User/Music/mp3`)
+  - `MUSIC_ROOT` (defaults to `LOSSLESS_DIR`)
+  - `MP3_ROOT` (defaults to `MP3_DIR`)
   - `DRY_RUN=false`, `VERBOSE=true`, `CONVERT_MISSING_MP3=true`
 - Behavior:
   - Phase 1: Move existing MP3s to `MP3_ROOT`, mirroring directory structure.
@@ -263,11 +261,8 @@ Create and populate an MP3 tree from a lossless library (simple sequential appro
   - `ffmpeg`, `ffprobe`, `find`, `xargs`, coreutils.
 - Example:
   ```bash
-  # edit MUSIC_ROOT/MP3_ROOT if needed
-  ./music-converter.sh
+  LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./music-converter.sh
   ```
-- Safety:
-  - Set `DRY_RUN=true` to preview changes. Ensure sufficient disk space.
 
 ---
 
@@ -278,70 +273,65 @@ Advanced MP3 pipeline with parallel conversion and optional artwork embedding.
 - Synopsis:
   - Moves MP3s to a mirrored MP3 tree, compares/handles duplicates, builds a list of lossless files, and converts them to MP3—optionally in parallel—with normalized metadata and artwork embedding.
 - Configuration variables:
-  - Paths/flags: `MUSIC_ROOT`, `MP3_ROOT`, `DRY_RUN`, `VERBOSE`, `CONVERT_MISSING_MP3`, `CONVERT_PARALLEL`, `THREADS=$(nproc)`
+  - Paths/flags:
+    - `LOSSLESS_DIR` (default: `/mnt/c/Users/User/Music/lossless`)
+    - `MP3_DIR` (default: `/mnt/c/Users/User/Music/mp3`)
+    - `MUSIC_ROOT` (defaults to `LOSSLESS_DIR`)
+    - `MP3_ROOT` (defaults to `MP3_DIR`)
+    - `DRY_RUN`, `VERBOSE`, `CONVERT_MISSING_MP3`, `CONVERT_PARALLEL`, `THREADS=$(nproc)`
   - Quality: `MP3_QUALITY=2` (when `PRESET_MODE="quality"`), or `BITRATE="192k"` (when `PRESET_MODE="bitrate"`)
   - Artwork: `PRESERVE_ARTWORK=true`
   - Cleanup: `DELETE_ORIGINAL_MP3=true` (delete source MP3 after moving)
 - Behavior:
   - Phase 1: Move MP3s to `MP3_ROOT`. If target exists, compare and handle duplicates.
-  - Phase 2: Build a list of lossless files lacking MP3 counterparts, then:
-    - Parallel mode: Use `xargs -0 -P $THREADS` to run conversions across CPUs.
-    - Serial mode: Convert one-by-one.
-  - Optional: Extract/attach artwork; enforce ID3v2.3 tagging.
+  - Phase 2: Build a list of lossless files lacking MP3 counterparts, convert serially or in parallel.
 - Outputs:
   - MP3 tree populated in `MP3_ROOT`, with optional artwork embedded.
 - Dependencies:
   - `ffmpeg`, `ffprobe`, `jq`, `bc`, `xargs`, coreutils.
 - Example:
   ```bash
-  PRESET_MODE=quality MP3_QUALITY=2 CONVERT_PARALLEL=true ./organize-music-enhanced.sh
+  LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" CONVERT_PARALLEL=true ./organize-music-enhanced.sh
   ```
-- Safety:
-  - When `DELETE_ORIGINAL_MP3=true`, original MP3s may be removed after moving; ensure backups.
-  - Use `DRY_RUN=true` to preview.
 
 ---
 
 ### flatten-directories.sh
 
-Flatten a directory tree into `result/` with stable, conflict-free filenames.
+Flatten a directory tree into `FLAT_DIR` with stable, conflict-free filenames.
 
 - Synopsis:
-  - Moves all `.mp3` files from a nested tree to a single `result/` directory. Skips exact duplicates (by content hash). Prevents filename collisions by adding a short path hash and counters.
+  - Moves `.mp3` files from a nested tree to a single `DEST_DIR` (defaults to `FLAT_DIR`), skipping exact duplicates (by content hash), and avoiding filename collisions with a short path hash and counters.
 - Arguments:
-  - None; run it from the directory you want to flatten (e.g., MP3 root).
+  - `SOURCE_ROOT` (positional 1 or env; defaults to `MP3_DIR`)
+  - `DEST_DIR` (positional 2 or env; defaults to `FLAT_DIR` = `/mnt/c/Users/User/Music/Bonneville`)
 - Behavior:
   - Uses an associative array of content hashes to skip duplicates.
-  - Computes a 6-char path hash from the file’s subdirectory and prefixes it in the output filename.
+  - Computes a 6-char path hash from each file’s subdirectory (relative to `SOURCE_ROOT`) and prefixes it in the output filename.
   - Handles name collisions by appending ` (counter)`.
 - Outputs:
-  - `result/` directory populated with flattened `.mp3` files.
+  - Flat directory populated at `DEST_DIR`.
 - Dependencies:
   - `md5sum`, `sha256sum`, `cmp`, `find`, `coreutils`.
 - Example:
   ```bash
-  cd "/mnt/c/Users/User/Music/mp3"
-  ./flatten-directories.sh
-  # → creates /mnt/c/Users/User/Music/mp3/result
+  MP3_DIR="/mnt/c/Users/User/Music/mp3" FLAT_DIR="/mnt/c/Users/User/Music/Bonneville" ./flatten-directories.sh
   ```
-- Safety:
-  - Destructive move from source into `result/`. Review before running on your only copy.
 
 ---
 
 ### create-genre-playlist.sh
 
-Generate genre-based and artist-based M3U playlists from the flat `result/` directory.
+Generate genre-based and artist-based M3U playlists from the flat directory by default.
 
 - Synopsis:
   - Scans MP3 files, extracts artist and genre via beets (preferred), or falls back to `mid3v2`/`exiftool`. Writes playlists to a temp directory, then moves them to the final location.
 - Arguments:
-  - `MUSIC_DIR` (default: `/mnt/c/Users/User/Music/mp3/result`)
-  - `PLAYLIST_DIR` (default: same as `MUSIC_DIR`)
+  - `MUSIC_DIR` (positional 1 or env; defaults to `FLAT_DIR` = `/mnt/c/Users/User/Music/Bonneville`)
+  - `PLAYLIST_DIR` (positional 2 or env; defaults to `MUSIC_DIR`)
 - Behavior:
   - For each MP3, determine artist and genres; sanitize names for filesystem safety.
   - Genre tags can be comma or semicolon separated; script splits and writes each to its own `genre_*.m3u`.
-  - Uses a temp directory to avoid partial/locked outputs during processing.
 - Outputs:
   - Artist playlists: `artist_<Artist>.m3u`
   - Genre playlists: `genre_<Genre>.m3u`
@@ -349,22 +339,20 @@ Generate genre-based and artist-based M3U playlists from the flat `result/` dire
   - `beet` (optional), `mid3v2` (optional), `exiftool` (optional), `find`.
 - Example:
   ```bash
-  ./create-genre-playlist.sh "/mnt/c/Users/User/Music/mp3/result"
+  ./create-genre-playlist.sh   # uses FLAT_DIR by default
   ```
-- Notes:
-  - If `beet` is installed and library contains your tracks, it is used first for artist/genre extraction.
 
 ---
 
 ### create-artist-playlists.sh
 
-Generate one M3U playlist per artist using MP3 tags.
+Generate one M3U playlist per artist using MP3 tags (defaults to flat directory).
 
 - Synopsis:
   - Minimal version focusing only on artist-based playlists using `mid3v2` tag reading.
 - Arguments:
-  - `MUSIC_DIR` (default: `/mnt/c/Users/User/Music/mp3/result`)
-  - `PLAYLIST_DIR` (default: same as `MUSIC_DIR`)
+  - `MUSIC_DIR` (positional 1 or env; defaults to `FLAT_DIR`)
+  - `PLAYLIST_DIR` (positional 2 or env; defaults to `MUSIC_DIR`)
 - Behavior:
   - Reads artist from ID3 tags; sanitizes the name; groups tracks per artist into M3U files in a temp directory then moves them to the destination.
 - Outputs:
@@ -373,19 +361,19 @@ Generate one M3U playlist per artist using MP3 tags.
   - `mid3v2`, `find`.
 - Example:
   ```bash
-  ./create-artist-playlists.sh "/mnt/c/Users/User/Music/mp3/result"
+  ./create-artist-playlists.sh   # uses FLAT_DIR by default
   ```
 
 ---
 
 ### investigate-genres.sh
 
-Investigate genre tagging and playlist contents; useful for debugging metadata and playlist generation.
+Investigate genre tagging and playlist contents; useful for debugging metadata and playlist generation (defaults to flat directory).
 
 - Synopsis:
   - Lists genre playlists in the current directory, samples contents, tests `beet list` genre extraction on a few files, prints ID3 genre frames, and counts playlist entries.
 - Arguments:
-  - `TARGET_DIR` positional or env var; default `./`
+  - `TARGET_DIR` positional or env var; defaults to `FLAT_DIR`
 - Behavior:
   - Uses null-delimited loops (`-print0` and `read -d ''`) to handle unusual filenames safely.
   - Uses `beet list` with `realpath` for robust matching.
@@ -395,7 +383,7 @@ Investigate genre tagging and playlist contents; useful for debugging metadata a
   - `beet` (optional), `mid3v2`, `exiftool`, `realpath`, `find`, coreutils.
 - Example:
   ```bash
-  ./investigate-genres.sh "/mnt/c/Users/User/Music/mp3/result"
+  ./investigate-genres.sh   # uses FLAT_DIR by default
   ```
 
 ---
@@ -404,7 +392,7 @@ Investigate genre tagging and playlist contents; useful for debugging metadata a
 
 1) Tag and import untagged audio to lossless library:
 ```bash
-# Edit variables in tag-files.sh if needed (MUSIC_SOURCE, OUTPUT_DIR)
+# Edit or export env vars if needed (TO_SORT_DIR, LOSSLESS_DIR)
 ./tag-files.sh
 ```
 
@@ -417,22 +405,22 @@ Investigate genre tagging and playlist contents; useful for debugging metadata a
 PRESET_MODE=quality MP3_QUALITY=2 CONVERT_PARALLEL=true ./organize-music-enhanced.sh
 ```
 
-3) Flatten MP3 tree:
+3) Flatten MP3 tree into Bonneville:
 ```bash
-cd "/mnt/c/Users/User/Music/mp3"
 ./flatten-directories.sh
+# → creates/uses /mnt/c/Users/User/Music/Bonneville
 ```
 
-4) Generate playlists:
+4) Generate playlists (defaults to Bonneville):
 ```bash
-./create-genre-playlist.sh "/mnt/c/Users/User/Music/mp3/result"
+./create-genre-playlist.sh
 # or
-./create-artist-playlists.sh "/mnt/c/Users/User/Music/mp3/result"
+./create-artist-playlists.sh
 ```
 
 5) Optional: Import MP3s into beets:
 ```bash
-beet import -A "/mnt/c/Users/User/Music/mp3"
+beet import -A "$MP3_DIR"
 ```
 
 ---
@@ -450,5 +438,5 @@ beet import -A "/mnt/c/Users/User/Music/mp3"
 
 ## Notes on Style and Robustness
 
-- Scripts prefer strict mode where applicable (`set -euo pipefail`), null-delimited loops for filenames, and explicit error handling.
-- Playlists and filenames are sanitized to avoid commas, slashes, quotes, and colons, with spaces replaced by underscores where needed.
+- Scripts prefer strict mode where applicable, null-delimited loops for filenames, and explicit error handling.
+- Playlists and filenames are sanitized to avoid platform-invalid characters, with whitespace normalization as needed.
