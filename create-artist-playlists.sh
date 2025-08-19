@@ -13,9 +13,10 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     ensure_deps python3 pip mid3v2
 fi
 
-# Define your music directory and playlist output directory
-MUSIC_DIR="${1:-/mnt/c/Users/User/Music/mp3/result}"
-PLAYLIST_DIR="${2:-/mnt/c/Users/User/Music/mp3/result}"
+# Global defaults (can be overridden by env or args)
+FLAT_DIR="${FLAT_DIR:-/mnt/c/Users/User/Music/Bonneville}"
+MUSIC_DIR="${1:-${MUSIC_DIR:-$FLAT_DIR}}"
+PLAYLIST_DIR="${2:-${PLAYLIST_DIR:-$MUSIC_DIR}}"
 
 # Check for required tools
 if ! command -v mid3v2 >/dev/null 2>&1; then
