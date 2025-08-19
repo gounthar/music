@@ -46,8 +46,10 @@ has_apt() { command -v apt-get >/dev/null 2>&1; }
 run_cmd() {
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] $*"
+    return 0
   else
-    eval "$@"
+    "$@"
+    return $?
   fi
 }
 
@@ -63,8 +65,8 @@ apt_install() {
     return 1
   fi
   if can_sudo; then
-    run_cmd "sudo apt-get update"
-    run_cmd "sudo apt-get install -y ${pkgs[*]}"
+    run_cmd sudo apt-get update
+    run_cmd sudo apt-get install -y "${pkgs[@]}"
   else
     echo "sudo not available; please run as root:" >&2
     echo "  apt-get update && apt-get install -y ${pkgs[*]}" >&2
@@ -87,7 +89,7 @@ pip_install_user() {
     return 0
   fi
   ensure_user_local_bin
-  run_cmd "python3 -m pip install -U --user \"$1\""
+  run_cmd python3 -m pip install -U --user "$1"
 }
 
 pip_install_system() {
@@ -97,7 +99,7 @@ pip_install_system() {
     return 1
   fi
   if can_sudo; then
-    run_cmd "sudo python3 -m pip install -U \"$1\""
+    run_cmd sudo python3 -m pip install -U "$1"
   else
     echo "sudo not available; please run as root:" >&2
     echo "  python3 -m pip install -U \"$1\"" >&2
