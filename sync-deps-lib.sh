@@ -29,7 +29,27 @@ while [[ $# -gt 0 ]]; do
 done
 
 script_dir="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-repo_root="$script_dir"
+
+# Determine repository root:
+# 1) Prefer Git toplevel if available
+# 2) Otherwise, walk up from script_dir until a parent containing lib/deps.sh is found
+repo_root=""
+if command -v git >/dev/null 2>&1; then
+  if top=$(git -C "$script_dir" rev-parse --show-toplevel 2>/dev/null); then
+    repo_root="$top"
+  fi
+fi
+if [[ -z "$repo_root" ]]; then
+  candidate="$script_dir"
+  while [[ "$candidate" != "/" && "$candidate" != "." ]]; do
+    if [[ -f "$candidate/lib/deps.sh" ]]; then
+      repo_root="$candidate"
+      break
+    fi
+    candidate="$(dirname "$candidate")"
+  done
+fi
+
 canonical="$repo_root/lib/deps.sh"
 
 if [[ ! -f "$canonical" ]]; then
