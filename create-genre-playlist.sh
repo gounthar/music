@@ -1,8 +1,10 @@
 #!/bin/bash
 set -euo pipefail
 
-MUSIC_DIR="${1:-/mnt/c/Users/User/Music/mp3/result}"
-PLAYLIST_DIR="${2:-$MUSIC_DIR}"
+# Global defaults (can be overridden by env or args)
+FLAT_DIR="${FLAT_DIR:-/mnt/c/Users/User/Music/Bonneville}"
+MUSIC_DIR="${1:-${MUSIC_DIR:-$FLAT_DIR}}"
+PLAYLIST_DIR="${2:-${PLAYLIST_DIR:-$MUSIC_DIR}}"
 
 mkdir -p "$PLAYLIST_DIR"
 cd "$MUSIC_DIR" || exit 1
