@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 MUSIC_DIR="/mnt/c/Users/User/Music/mp3/result"
 PLAYLIST_DIR="/mnt/c/Users/User/Music/mp3/result"
