@@ -10,7 +10,9 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     ensure_deps python3 pip beet mid3v2 exiftool
 fi
 
-TARGET_DIR="${1:-${TARGET_DIR:-./}}"
+# Global defaults (can be overridden by env or args)
+FLAT_DIR="${FLAT_DIR:-/mnt/c/Users/User/Music/Bonneville}"
+TARGET_DIR="${1:-${TARGET_DIR:-$FLAT_DIR}}"
 cd "$TARGET_DIR" || exit 1
 
 # 1. Check what genre playlists actually exist
@@ -29,7 +31,7 @@ fi
 echo "Testing genre extraction on a few files:"
 max=${MAX_SAMPLES:-5}
 count=0
-find . -maxdepth 1 -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
+find . -maxdepth 1 -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     filename=$(basename "$file")
     printf '%s: ' "$filename"
     # shellcheck disable=SC2016
@@ -46,7 +48,7 @@ echo ""
 
 # 4. Check if files have multiple genres in their ID3 tags
 echo "Checking ID3 tags for multiple genres:"
-find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
+find . -maxdepth 1 -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     if command -v mid3v2 &> /dev/null; then
