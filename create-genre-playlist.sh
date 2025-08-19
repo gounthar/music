@@ -11,15 +11,18 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Sanitize a string for safe playlist filenames
 sanitize_filename() {
-    local input="$1"
+    local input
+    input="$1"
     # trim, remove commas/slashes/quotes/colons, replace spaces with underscores
     echo "$input" | xargs | sed 's/[,\/]//g' | tr ' ' '_' | tr -d ':"'"'"''
 }
 
 # Function to extract artist name
 get_artist() {
-    local file="$1"
-    local artist=""
+    local file
+    file="$1"
+    local artist
+    artist=""
     
     # Try beets first
     if command -v beet &> /dev/null; then
@@ -46,8 +49,10 @@ get_artist() {
 
 # Function to extract genre
 get_genre() {
-    local file="$1"
-    local genre=""
+    local file
+    file="$1"
+    local genre
+    genre=""
     
     # Try beets first
     if command -v beet &> /dev/null; then
@@ -77,7 +82,8 @@ get_genre() {
 
 # Simple function to guess genre from artist name (very basic)
 guess_genre_from_artist() {
-    local artist="$1"
+    local artist
+    artist="$1"
     case $(echo "$artist" | tr '[:upper:]' '[:lower:]') in
         *metal*|*death*|*black*|*thrash*|*slayer*|*metallica*|*megadeth*)
             echo "Metal"
