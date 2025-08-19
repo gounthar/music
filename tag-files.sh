@@ -19,9 +19,13 @@ MUSIC_SOURCE="${MUSIC_SOURCE:-$TO_SORT_DIR}"
 OUTPUT_DIR="${OUTPUT_DIR:-$LOSSLESS_DIR}"
 
 # Create non-interactive config
-CONFIG_FILE="$HOME/.config/beets/config.yaml"
+CONFIG_FILE="${BEETS_CONFIG_FILE:-$HOME/.config/beets/config.yaml}"
+if [ ! -f "$CONFIG_FILE" ]; then
 mkdir -p "$(dirname "$CONFIG_FILE")"
 cat > "$CONFIG_FILE" <<EOL
+else
+    echo "Beets config already exists at: $CONFIG_FILE — leaving it unchanged."
+fi
 # ~/.config/beets/config.yaml
 directory: /mnt/c/Users/User/Music/mp3/result
 library: ~/.config/beets/musiclibrary.db
