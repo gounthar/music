@@ -25,7 +25,7 @@ Install examples (WSL Debian/Ubuntu):
 ```bash
 sudo apt-get update
 sudo apt-get install -y ffmpeg jq bc exiftool python3-pip
-pip install beets "beets[fetchart,lyrics,lastgenre,discogs]" mutagen
+pip install "beets[fetchart,lyrics,lastgenre,discogs]" mutagen
 ```
 
 Discogs token:
