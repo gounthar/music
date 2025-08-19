@@ -176,7 +176,7 @@ ensure_user_local_bin
   is_cmd python3 && python3 --version || echo "python3: not found"
   is_cmd pip && pip --version || echo "pip: not found"
   is_cmd beet && beet version || echo "beet: not found"
-  is_cmd mid3v2 && mid3v2 -V || echo "mid3v2: not found"
+  is_cmd mid3v2 && mid3v2 --version || echo "mid3v2: not found"
 } | sed 's/^/  /'
 
 echo "==> Done."
