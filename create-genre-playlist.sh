@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euo pipefail
 
-MUSIC_DIR="/mnt/c/Users/User/Music/mp3/result"
-PLAYLIST_DIR="/mnt/c/Users/User/Music/mp3/result"
+MUSIC_DIR="${1:-/mnt/c/Users/User/Music/mp3/result}"
+PLAYLIST_DIR="${2:-$MUSIC_DIR}"
 
 mkdir -p "$PLAYLIST_DIR"
 cd "$MUSIC_DIR"
