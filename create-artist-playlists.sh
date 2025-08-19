@@ -8,7 +8,7 @@ PLAYLIST_DIR="${2:-/mnt/c/Users/User/Music/mp3/result}"
 mkdir -p "$PLAYLIST_DIR"
 
 # Change to the music directory to get relative paths
-cd "$MUSIC_DIR"
+cd "$MUSIC_DIR" || exit 1
 
 # Create a temporary directory for new playlists
 TEMP_DIR=$(mktemp -d)

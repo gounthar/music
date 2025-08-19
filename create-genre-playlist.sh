@@ -5,7 +5,7 @@ MUSIC_DIR="${1:-/mnt/c/Users/User/Music/mp3/result}"
 PLAYLIST_DIR="${2:-$MUSIC_DIR}"
 
 mkdir -p "$PLAYLIST_DIR"
-cd "$MUSIC_DIR"
+cd "$MUSIC_DIR" || exit 1
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
@@ -28,6 +28,7 @@ get_artist() {
     if command -v beet &> /dev/null; then
         local abs_path
         abs_path=$(realpath "$file")
+        # shellcheck disable=SC2016
         artist=$(beet list path:"$abs_path" -f '$artist' | head -n1 | xargs)
     fi
     
@@ -58,6 +59,7 @@ get_genre() {
     if command -v beet &> /dev/null; then
         local abs_path
         abs_path=$(realpath "$file")
+        # shellcheck disable=SC2016
         genre=$(beet list path:"$abs_path" -f '$genre' | head -n1 | xargs)
     fi
     
@@ -81,11 +83,12 @@ get_genre() {
 }
 
 # Simple function to guess genre from artist name (very basic)
+# shellcheck disable=SC2221,SC2222
 guess_genre_from_artist() {
     local artist
     artist="$1"
     case $(echo "$artist" | tr '[:upper:]' '[:lower:]') in
-        *metal*|*death*|*black*|*thrash*|*slayer*|*metallica*|*megadeth*)
+        *metal*|*death*|*black*|*thrash*|*slayer*|*megadeth*)
             echo "Metal"
             ;;
         *rock*|*ac/dc*|*gnr*|*guns*|*aerosmith*)
@@ -141,4 +144,4 @@ done
 
 rm -rf "$TEMP_DIR"
 echo "Playlists created in: $PLAYLIST_DIR"
-ls -la "$PLAYLIST_DIR"/*.m3u | head -10
+find "$PLAYLIST_DIR" -maxdepth 1 -type f -name "*.m3u" -print0 | xargs -0 -r ls -la | head -10

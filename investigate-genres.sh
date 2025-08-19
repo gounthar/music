@@ -21,6 +21,7 @@ echo "Testing genre extraction on a few files:"
 find . -maxdepth 1 -name "*.mp3" | while read -r file; do
     filename=$(basename "$file")
     echo -n "$filename: "
+    # shellcheck disable=SC2016
     beet list path:"$(realpath "$filename")" -f '$genre' 2>/dev/null || echo "No genre found in beets"
 done
 echo ""
