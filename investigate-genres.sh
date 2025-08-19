@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-cd "/mnt/c/Users/User/Music/mp3/result"
+cd "${1:-/mnt/c/Users/User/Music/mp3/result}"
 
 # 1. Check what genre playlists actually exist
 echo "Genre playlists found:"
