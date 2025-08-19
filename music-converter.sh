@@ -4,8 +4,8 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
+    ensure_deps ffmpeg ffprobe || { echo "Missing dependencies (ffmpeg/ffprobe)" >&2; exit 1; }
     add_user_local_bin_to_path
-    ensure_deps ffmpeg ffprobe
 fi
 
 ## Configuration
