@@ -9,8 +9,10 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
 fi
 
 ## Configuration
-MUSIC_ROOT="/mnt/c/Users/User/Music/lossless"
-MP3_ROOT="$MUSIC_ROOT/../mp3"
+LOSSLESS_DIR="${LOSSLESS_DIR:-/mnt/c/Users/User/Music/lossless}"
+MP3_DIR="${MP3_DIR:-/mnt/c/Users/User/Music/mp3}"
+MUSIC_ROOT="${MUSIC_ROOT:-$LOSSLESS_DIR}"
+MP3_ROOT="${MP3_ROOT:-$MP3_DIR}"
 DRY_RUN=false
 VERBOSE=true
 CONVERT_MISSING_MP3=true
