@@ -1,4 +1,6 @@
 #!/bin/bash
+set -euo pipefail
+IFS=$'\n\t'
 
 # Load dependency helpers and ensure required tools (if available)
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,9 +12,11 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
 fi
 
 
-# Set directories
-MUSIC_SOURCE="/mnt/c/Users/User/Music/to-sort"
-OUTPUT_DIR="/mnt/c/Users/User/Music/lossless"
+# Global defaults (can be overridden by env)
+TO_SORT_DIR="${TO_SORT_DIR:-/mnt/c/Users/User/Music/to-sort}"
+LOSSLESS_DIR="${LOSSLESS_DIR:-/mnt/c/Users/User/Music/lossless}"
+MUSIC_SOURCE="${MUSIC_SOURCE:-$TO_SORT_DIR}"
+OUTPUT_DIR="${OUTPUT_DIR:-$LOSSLESS_DIR}"
 
 # Create non-interactive config
 CONFIG_FILE="$HOME/.config/beets/config.yaml"
