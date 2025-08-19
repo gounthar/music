@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 cd "/mnt/c/Users/User/Music/mp3/result"
 
