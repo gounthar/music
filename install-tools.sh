@@ -89,7 +89,7 @@ pip_install_user() {
     return 0
   fi
   ensure_user_local_bin
-  run_cmd python3 -m pip install -U --user "$1"
+  run_cmd python3 -m pip install -U --user -- "$1"
 }
 
 pip_install_system() {
@@ -99,7 +99,7 @@ pip_install_system() {
     return 1
   fi
   if can_sudo; then
-    run_cmd sudo python3 -m pip install -U "$1"
+    run_cmd sudo python3 -m pip install -U -- "$1"
   else
     echo "sudo not available; please run as root:" >&2
     echo "  python3 -m pip install -U \"$1\"" >&2
