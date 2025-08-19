@@ -2,7 +2,7 @@
 set -euo pipefail
 
 TARGET_DIR="${1:-${TARGET_DIR:-./}}"
-cd "$TARGET_DIR"
+cd "$TARGET_DIR" || exit 1
 
 # 1. Check what genre playlists actually exist
 echo "Genre playlists found:"
@@ -18,17 +18,17 @@ fi
 
 # 3. Check what genres beets is actually finding for some files
 echo "Testing genre extraction on a few files:"
-find . -maxdepth 1 -name "*.mp3" | while read -r file; do
+find . -maxdepth 1 -name "*.mp3" -print0 | head -z -5 2>/dev/null | while IFS= read -r -d '' file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     # shellcheck disable=SC2016
-    beet list path:"$(realpath "$filename")" -f '$genre' 2>/dev/null || echo "No genre found in beets"
+    beet list path:"$(realpath "$file")" -f '$genre' 2>/dev/null || echo "No genre found in beets"
 done
 echo ""
 
 # 4. Check if files have multiple genres in their ID3 tags
 echo "Checking ID3 tags for multiple genres:"
-find . -maxdepth 1 -name "*.mp3" | while read -r file; do
+find . -maxdepth 1 -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
     filename=$(basename "$file")
     echo -n "$filename: "
     if command -v mid3v2 &> /dev/null; then
