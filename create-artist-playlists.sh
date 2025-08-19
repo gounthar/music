@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Load dependency helpers and ensure required tools (if available)
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
+    # shellcheck source=lib/deps.sh
+    . "$SCRIPT_DIR/lib/deps.sh"
+    add_user_local_bin_to_path
+    ensure_deps python3 pip mid3v2
+fi
+
 # Define your music directory and playlist output directory
 MUSIC_DIR="${1:-/mnt/c/Users/User/Music/mp3/result}"
 PLAYLIST_DIR="${2:-/mnt/c/Users/User/Music/mp3/result}"

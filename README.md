@@ -38,6 +38,55 @@ pip install beets "beets[fetchart,lyrics,lastgenre,discogs]" mutagen
 Discogs token:
 - For best results with Discogs metadata, get a personal token and configure beets accordingly.
 
+### Quick install (WSL/Debian/Ubuntu)
+
+To install all required tools in one step:
+```bash
+./install-tools.sh
+```
+
+Flags:
+- --no-sudo: do not use sudo; prints commands to run manually
+- --pip-system: install Python packages system-wide instead of per-user
+- --dry-run: print actions without executing
+
+Environment equivalents:
+- NO_SUDO=1, ENSURE_PIP_SYSTEM=1, DRY_RUN=1
+
+### Virtual environment (recommended)
+
+To isolate Python packages (beets, mutagen) and avoid permission or `--user` issues in virtualenvs:
+
+Create/use a virtual environment and install into it:
+```bash
+./install-tools.sh --use-venv --venv .venv
+source .venv/bin/activate
+```
+
+Notes:
+- If you are already inside a virtualenv, the installer detects it and installs into that environment.
+- If you prefer system-wide packages instead of a venv:
+```bash
+./install-tools.sh --pip-system
+```
+
+### Auto-ensure dependencies in scripts
+
+Scripts that rely on external tools can self-check and install missing ones by sourcing `lib/deps.sh`:
+```bash
+# At the top of your script
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/deps.sh
+. "$SCRIPT_DIR/lib/deps.sh"
+add_user_local_bin_to_path
+ensure_deps python3 pip beet mid3v2 exiftool ffmpeg ffprobe jq bc
+```
+
+Behavior:
+- On Debian/Ubuntu, `ensure_deps` installs mapped commands via apt or pip (`pip --user` by default)
+- Respects `NO_SUDO=1` and `DRY_RUN=1`; prints guidance if installation cannot proceed
+- Adds `~/.local/bin` to PATH for pip `--user` commands
+
 ---
 
 ## Directory Conventions and Defaults

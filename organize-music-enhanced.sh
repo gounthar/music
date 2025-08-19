@@ -1,5 +1,14 @@
 #!/bin/bash
 
+# Load dependency helpers and ensure required tools (if available)
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
+    # shellcheck source=lib/deps.sh
+    . "$SCRIPT_DIR/lib/deps.sh"
+    add_user_local_bin_to_path
+    ensure_deps ffmpeg ffprobe jq bc
+fi
+
 ## Configuration
 MUSIC_ROOT="/mnt/c/Users/User/Music/lossless"
 MP3_ROOT="$MUSIC_ROOT/../mp3"

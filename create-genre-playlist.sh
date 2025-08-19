@@ -9,6 +9,15 @@ cd "$MUSIC_DIR" || exit 1
 TEMP_DIR=$(mktemp -d)
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
+# Load dependency helpers and ensure required tools
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
+    # shellcheck source=lib/deps.sh
+    . "$SCRIPT_DIR/lib/deps.sh"
+    add_user_local_bin_to_path
+    ensure_deps python3 pip beet mid3v2 exiftool
+fi
+
 # Sanitize a string for safe playlist filenames
 sanitize_filename() {
     local input
