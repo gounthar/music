@@ -18,11 +18,20 @@ fi
 
 # 3. Check what genres beets is actually finding for some files
 echo "Testing genre extraction on a few files:"
-find . -maxdepth 1 -name "*.mp3" -print0 | head -z -5 2>/dev/null | while IFS= read -r -d '' file; do
+max=${MAX_SAMPLES:-5}
+count=0
+find . -maxdepth 1 -type f -name "*.mp3" -print0 | while IFS= read -r -d '' file; do
     filename=$(basename "$file")
-    echo -n "$filename: "
+    printf '%s: ' "$filename"
     # shellcheck disable=SC2016
-    beet list path:"$(realpath "$file")" -f '$genre' 2>/dev/null || echo "No genre found in beets"
+    genre_out=$(beet list path:"$(realpath "$file")" -f '$genre' 2>/dev/null || true)
+    if [[ -n "$genre_out" ]]; then
+        echo "$genre_out"
+    else
+        echo "No genre found in beets"
+    fi
+    count=$((count + 1))
+    (( count >= max )) && break
 done
 echo ""
 
