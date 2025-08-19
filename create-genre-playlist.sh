@@ -49,7 +49,7 @@ get_genre() {
     
     # Fallback to ID3 tags
     if [[ -z "$genre" ]] && command -v mid3v2 &> /dev/null; then
-        genre=$(mid3v2 -l "$file" | grep -i "TCON" | awk -F= '{print $2}' | head -n1 | xargs)
+        genre=$(mid3v2 -l "$file" | grep -i "TCON" | awk -F= '{print $2}' | paste -sd, - | xargs)
     fi
     
     if [[ -z "$genre" ]] && command -v exiftool &> /dev/null; then
