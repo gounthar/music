@@ -67,6 +67,9 @@ import:
 # Plugins: enable acoustic fingerprinting (chroma) plus fetchart, lyrics, lastgenre, discogs
 plugins: chroma fetchart lyrics lastgenre discogs
 
+acoustid:
+    apikey: YOUR_ACOUSTID_API_KEY
+
 fetchart:
     auto: yes
     minwidth: 0
