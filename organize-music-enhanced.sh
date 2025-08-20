@@ -120,6 +120,10 @@ convert_to_mp3() {
     fi
 }
 
+# Export functions and config so they're available to subshells spawned by xargs
+export -f normalize_name get_metadata compare_metadata extract_artwork convert_to_mp3
+export PRESERVE_ARTWORK DRY_RUN VERBOSE PRESET_MODE MP3_QUALITY BITRATE MP3_ROOT MUSIC_ROOT
+
 ## Main Processing
 
 # Create MP3 root directory
