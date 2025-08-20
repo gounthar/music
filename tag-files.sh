@@ -28,7 +28,6 @@ directory: $OUTPUT_DIR
 library: ~/.config/beets/musiclibrary.db
 
 import:
-    copy: yes
     write: yes
     move: no
     resume: no
