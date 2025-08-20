@@ -200,17 +200,25 @@ if $CONVERT_MISSING_MP3; then
             echo "Processing ${#file_list[@]} files with $THREADS threads..."
         fi
         
-        printf "%s\0" "${file_list[@]}" | \
-        xargs -0 -P $THREADS -I {} bash -c '
-            lossless_file="{}"
-            mp3_path="$MP3_ROOT/${lossless_file#$MUSIC_ROOT/}"
-            mp3_path="${mp3_path%.*}.mp3"
-            
-            # Check again in case parallel processes created it
-            [[ -f "$mp3_path" ]] && exit 0
-            
-            convert_to_mp3 "$lossless_file" "$mp3_path"
-        '
+        if ((${#file_list[@]} > 0)); then
+            printf "%s\0" "${file_list[@]}" | \
+            xargs -0 -r -P $THREADS -I {} bash -c '
+                lossless_file="{}"
+                # Skip if empty (defensive guard)
+                [[ -z "$lossless_file" ]] && exit 0
+                mp3_path="$MP3_ROOT/${lossless_file#$MUSIC_ROOT/}"
+                mp3_path="${mp3_path%.*}.mp3"
+                
+                # Check again in case parallel processes created it
+                [[ -f "$mp3_path" ]] && exit 0
+                
+                convert_to_mp3 "$lossless_file" "$mp3_path"
+            '
+        else
+            if $VERBOSE; then
+                echo "No files to convert."
+            fi
+        fi
     else
         for lossless_file in "${file_list[@]}"; do
             mp3_path="$MP3_ROOT/${lossless_file#$MUSIC_ROOT/}"
