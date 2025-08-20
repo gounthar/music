@@ -56,8 +56,8 @@ find "$SOURCE_ROOT" -mindepth 2 -type f -iname "*.mp3" -print0 | while IFS= read
     ((counter++))
   done
 
-  # Copy the file to the flat destination (preserve metadata, do not overwrite)
-  cp -n -p "$filepath" "$target_file"
+  # Copy the file to the flat destination (preserve mode and timestamps; avoid ownership; allow overwrite; CoW if supported)
+  cp --preserve=mode,timestamps --reflink=auto "$filepath" "$target_file"
   echo "Copied: $filepath -> $target_file"
 done
 
