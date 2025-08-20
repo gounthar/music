@@ -100,7 +100,7 @@ Examples:
 FLAT_DIR="/mnt/c/Users/User/Music/MyFlat" ./create-genre-playlist.sh
 
 # Override lossless/mp3 roots for conversion
-LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./music-converter.sh
+LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./organize-music-enhanced.sh
 ```
 
 ---
@@ -114,10 +114,8 @@ LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./music-converter.sh
 - Use de-duplicate.sh to remove duplicate files such as “Track (1).mp3” if they match original content.
 
 3) Build the MP3 tree
-- Option A (recommended): organize-music-enhanced.sh
+- organize-music-enhanced.sh (canonical)
   - Moves existing MP3s into a mirrored MP3 tree, converts lossless files to MP3, supports parallelism and optional artwork embedding.
-- Option B: music-converter.sh
-  - Simpler conversion with a “move existing MP3s” phase and conversion of missing MP3s.
 
 4) Flatten the MP3 tree for portable consumption
 - Run flatten-directories.sh to create a single flat directory at FLAT_DIR (default: `/mnt/c/Users/User/Music/Bonneville`) with conflict-free filenames.
@@ -240,29 +238,6 @@ Convert `.mka` audio to `.flac`. Copies stream if codec is already FLAC, else tr
 
 ---
 
-### music-converter.sh
-
-Create and populate an MP3 tree from a lossless library (simple sequential approach).
-
-- Synopsis:
-  - Moves existing MP3s out of `MUSIC_ROOT` into `MP3_ROOT` and converts lossless files (FLAC/ALAC) that lack a corresponding MP3.
-- Configuration variables:
-  - `LOSSLESS_DIR` (default: `/mnt/c/Users/User/Music/lossless`)
-  - `MP3_DIR` (default: `/mnt/c/Users/User/Music/mp3`)
-  - `MUSIC_ROOT` (defaults to `LOSSLESS_DIR`)
-  - `MP3_ROOT` (defaults to `MP3_DIR`)
-  - `DRY_RUN=false`, `VERBOSE=true`, `CONVERT_MISSING_MP3=true`
-- Behavior:
-  - Phase 1: Move existing MP3s to `MP3_ROOT`, mirroring directory structure.
-  - Phase 2: Convert `.flac`/`.alac` (excluding anything already under MP3_ROOT) using libmp3lame `-q:a 2`, preserving metadata with ID3v2.3 tags.
-- Outputs:
-  - MP3 tree under `MP3_ROOT` (mirrors the structure of the lossless library).
-- Dependencies:
-  - `ffmpeg`, `ffprobe`, `find`, `xargs`, coreutils.
-- Example:
-  ```bash
-  LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./music-converter.sh
-  ```
 
 ---
 
@@ -396,13 +371,13 @@ Investigate genre tagging and playlist contents; useful for debugging metadata a
 ./tag-files.sh
 ```
 
-2) Convert to MP3 tree (choose one):
+2) Convert to MP3 tree:
 ```bash
-# Simple
-./music-converter.sh
-
-# Advanced (recommended)
+# Canonical (recommended)
 PRESET_MODE=quality MP3_QUALITY=2 CONVERT_PARALLEL=true ./organize-music-enhanced.sh
+
+# Serial/simple run (no parallelism)
+CONVERT_PARALLEL=false ./organize-music-enhanced.sh
 ```
 
 3) Flatten MP3 tree into Bonneville:
