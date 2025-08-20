@@ -10,10 +10,12 @@ The scripts now work from anywhere (any working directory) and use environment-d
 
 - OS: Linux or Windows via WSL (Debian/Ubuntu recommended)
 - Packages/Tools:
-  - beets and selected plugins: fetchart, lyrics, lastgenre, discogs
+  - beets and selected plugins: chroma, fetchart, lyrics, lastgenre, discogs
   - ffmpeg, ffprobe
+  - Chromaprint tools: fpcalc (for AcoustID fingerprinting)
   - jq, bc (for advanced organization and metadata comparisons)
   - Mutagen tools: mid3v2 (from python-mutagen)
+  - Python: pyacoustid (AcoustID client library used by beets’ chroma)
   - exiftool (optional but helpful)
   - GNU coreutils: find, xargs, sed, awk, tr, sha256sum, md5sum, cmp, realpath
 - WSL notes:
@@ -24,9 +26,11 @@ Install examples (WSL Debian/Ubuntu):
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y ffmpeg jq bc exiftool python3-pip
-pip install "beets[fetchart,lyrics,lastgenre,discogs]" mutagen
+sudo apt-get install -y ffmpeg jq bc exiftool python3-pip libchromaprint-tools
+pip install "beets[fetchart,lyrics,lastgenre,discogs]" mutagen pyacoustid
 ```
+
+Note: Package names for fpcalc vary by distro. On Debian/WSL use libchromaprint-tools; on Ubuntu use chromaprint-tools. If neither exists, try acoustid-fingerprinter or chromaprint.
 
 Discogs token:
 - For best results with Discogs metadata, get a personal token and configure beets accordingly.
@@ -73,7 +77,7 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/deps.sh
 . "$SCRIPT_DIR/lib/deps.sh"
 add_user_local_bin_to_path
-ensure_deps python3 pip beet mid3v2 exiftool ffmpeg ffprobe jq bc
+ensure_deps python3 pip beet fpcalc acoustid mid3v2 exiftool ffmpeg ffprobe jq bc
 ```
 
 Behavior:
@@ -142,7 +146,7 @@ Below are details for each script: synopsis, parameters, behavior, outputs, depe
 Non-interactive beets import from a to-sort folder into an organized lossless library.
 
 - Synopsis:
-  - Writes a non-interactive beets config and runs `beet import -A "$MUSIC_SOURCE"` to auto-apply tag matches and move files into a structured lossless library.
+  - Creates (if missing) a non-interactive beets config and runs `beet import -A "$MUSIC_SOURCE"` to auto-apply tag matches and import files into a structured lossless library. By default it copies (move: no); set `import.move: yes` in your beets config if you want files moved (source removed).
 - Arguments:
   - None. Variables (env or inline):
     - `TO_SORT_DIR` (default: `/mnt/c/Users/User/Music/to-sort`)
@@ -151,18 +155,20 @@ Non-interactive beets import from a to-sort folder into an organized lossless li
     - `OUTPUT_DIR` (defaults to `LOSSLESS_DIR`)
 - Behavior:
   - Optionally sources `lib/deps.sh` to ensure dependencies.
-  - Writes `~/.config/beets/config.yaml` with non-interactive defaults and plugins.
+  - Creates `~/.config/beets/config.yaml` if it does not exist, with non-interactive defaults and plugins (including `chroma` for acoustic fingerprinting). Leaves an existing config unchanged.
   - Runs `beet import -A "$MUSIC_SOURCE"` for automated tagging and import.
 - Outputs:
   - Tagged and organized files in `$OUTPUT_DIR`, available in your beets library.
 - Dependencies:
-  - Python3/pip, beets and plugins noted above.
+  - Python3/pip, beets and plugins noted above (including `chroma`), Chromaprint `fpcalc`.
 - Example:
   ```bash
   TO_SORT_DIR="/mnt/c/Users/User/Music/to-sort" LOSSLESS_DIR="/mnt/c/Users/User/Music/lossless" ./tag-files.sh
   ```
 - Safety:
-  - The script overwrites `~/.config/beets/config.yaml`. Backup your config first if you have a custom setup.
+  - The script only creates `~/.config/beets/config.yaml` if it does not exist; otherwise it leaves your config unchanged. If you want to change behavior (e.g., move instead of copy), edit your beets config and set:
+    import:
+      move: yes
 
 ---
 

@@ -4,8 +4,8 @@ set -euo pipefail
 # install-tools.sh — Bootstrap required tools for the music scripts (Debian/Ubuntu/WSL focused)
 #
 # Installs:
-#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip
-#   - pip packages: beets[fetchart,lyrics,lastgenre,discogs], mutagen (mid3v2)
+#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip, libchromaprint-tools (fpcalc) [fallbacks: chromaprint-tools, acoustid-fingerprinter, or chromaprint]
+#   - pip packages: beets[fetchart,lyrics,lastgenre,discogs], mutagen (mid3v2), pyacoustid
 #
 # Flags:
 #   --no-sudo         Do not use sudo; print the commands instead
@@ -115,6 +115,12 @@ if [[ "$USE_VENV" == "1" && -z "${VIRTUAL_ENV:-}" ]]; then
 fi
 apt_install "${PKGS[@]}" || true
 
+# Ensure fpcalc (Chromaprint) via best-available package
+if ! is_cmd fpcalc; then
+  echo "==> Installing Chromaprint tool (fpcalc)..."
+  apt_install libchromaprint-tools || apt_install chromaprint-tools || apt_install acoustid-fingerprinter || apt_install chromaprint || true
+fi
+
 # Python packages: install either into a virtualenv (preferred if requested/active) or user/system site
 if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   # Determine venv dir/bin
@@ -141,9 +147,11 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U \"beets[fetchart,lyrics,lastgenre,discogs]\""
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U mutagen"
+    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pyacoustid"
   else
     "$VENV_BIN/python" -m pip install -U "beets[fetchart,lyrics,lastgenre,discogs]"
     "$VENV_BIN/python" -m pip install -U mutagen
+    "$VENV_BIN/python" -m pip install -U pyacoustid
   fi
 
   echo "==> Virtualenv ready. To use CLI tools in your shell session, run:"
@@ -160,9 +168,41 @@ else
   if [[ "$ENSURE_PIP_SYSTEM" == "1" ]]; then
     pip_install_system "beets[fetchart,lyrics,lastgenre,discogs]"
     pip_install_system "mutagen"
+    pip_install_system "pyacoustid"
   else
     pip_install_user "beets[fetchart,lyrics,lastgenre,discogs]"
     pip_install_user "mutagen"
+    pip_install_user "pyacoustid"
+  fi
+fi
+
+echo "==> Ensuring 'acoustid' module is present for the Python env used by 'beet'..."
+if command -v beet >/dev/null 2>&1; then
+  BEET_EXE="$(command -v beet)"
+  PY_INTERP=""
+  if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+    SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+    read -r -a _tok <<<"$SHEBANG_LINE"
+    FIRST="${_tok[0]:-}"
+    SECOND="${_tok[1]:-}"
+    if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ] && [ -n "$SECOND" ]; then
+      PY_INTERP="$SECOND"
+    else
+      PY_INTERP="$FIRST"
+    fi
+  fi
+  PY_INTERP="$(echo "${PY_INTERP:-}" | awk '{$1=$1;print}')"
+  if [[ -z "$PY_INTERP" ]]; then
+    PY_INTERP="python3"
+  fi
+  NEEDS_INSTALL="$("$PY_INTERP" -c 'import importlib; print("0" if importlib.util.find_spec("acoustid") else "1")' 2>/dev/null || echo 1)"
+  if [[ "$NEEDS_INSTALL" == "1" ]]; then
+    IN_VENV="$("$PY_INTERP" -c 'import sys; print("1" if getattr(sys, "base_prefix", sys.prefix) != sys.prefix else "0")' 2>/dev/null || echo 0)"
+    if [[ "$IN_VENV" == "1" ]]; then
+      run_cmd "$PY_INTERP" -m pip install -U pyacoustid || true
+    else
+      run_cmd "$PY_INTERP" -m pip install -U --user pyacoustid || true
+    fi
   fi
 fi
 
@@ -172,6 +212,7 @@ ensure_user_local_bin
   echo "# Versions"
   is_cmd ffmpeg && ffmpeg -version | head -n1 || echo "ffmpeg: not found"
   is_cmd ffprobe && ffprobe -version | head -n1 || echo "ffprobe: not found"
+  is_cmd fpcalc && fpcalc -version || echo "fpcalc: not found"
   is_cmd jq && jq --version || echo "jq: not found"
   is_cmd bc && bc --version 2>/dev/null | head -n1 || echo "bc: not found"
   is_cmd exiftool && exiftool -ver || echo "exiftool: not found"

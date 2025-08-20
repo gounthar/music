@@ -7,8 +7,39 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
-    ensure_deps python3 pip beet || { echo "Missing dependencies (python3/pip/beet)" >&2; exit 1; }
+    ensure_deps python3 pip beet fpcalc acoustid || { echo "Missing dependencies (python3/pip/beet/fpcalc/acoustid)" >&2; exit 1; }
     add_user_local_bin_to_path
+
+    # Ensure pyacoustid is installed in the same Python environment as 'beet'
+    if command -v beet >/dev/null 2>&1; then
+        BEET_EXE="$(command -v beet)"
+        PY_INTERP=""
+        if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+            # Read and parse shebang interpreter safely
+            SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+            # Tokenize into words
+            read -r -a _tok <<<"$SHEBANG_LINE"
+            FIRST="${_tok[0]:-}"
+            SECOND="${_tok[1]:-}"
+            # If using /usr/bin/env, pick the second token (the interpreter); else pick the first
+            if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ] && [ -n "$SECOND" ]; then
+                PY_INTERP="$SECOND"
+            else
+                PY_INTERP="$FIRST"
+            fi
+        fi
+        # Trim whitespace and fallback
+        PY_INTERP="$(echo "${PY_INTERP:-}" | awk '{$1=$1;print}')"
+        if [ -z "$PY_INTERP" ]; then
+            PY_INTERP="python3"
+        fi
+        # Detect virtualenv; use --user only when not in venv to avoid permission issues
+        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -q 'True'; then
+            "$PY_INTERP" -m pip install -U pyacoustid || true
+        else
+            "$PY_INTERP" -m pip install -U --user pyacoustid || true
+        fi
+    fi
 fi
 
 
@@ -29,12 +60,12 @@ library: ~/.config/beets/musiclibrary.db
 
 import:
     write: yes
-    move: no
+    move: yes
     resume: no
     incremental: yes
 
-# Updated plugins - removed acousticbrainz, added lastgenre
-plugins: fetchart lyrics lastgenre discogs
+# Plugins: enable acoustic fingerprinting (chroma) plus fetchart, lyrics, lastgenre, discogs
+plugins: chroma fetchart lyrics lastgenre discogs
 
 fetchart:
     auto: yes
@@ -43,6 +74,14 @@ fetchart:
 lyrics:
     auto: yes
     sources: genius musixmatch google
+
+# Chroma plugin for acoustic fingerprinting (AcoustID)
+chroma:
+    auto: yes
+
+# Optional: AcoustID API key (recommended for better lookups)
+# acoustid:
+#     apikey: YOUR_ACOUSTID_API_KEY
 
 # LastGenre plugin for better genre detection
 lastgenre:
