@@ -26,9 +26,11 @@ Install examples (WSL Debian/Ubuntu):
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y ffmpeg jq bc exiftool python3-pip chromaprint-tools
+sudo apt-get install -y ffmpeg jq bc exiftool python3-pip libchromaprint-tools
 pip install "beets[fetchart,lyrics,lastgenre,discogs]" mutagen pyacoustid
 ```
+
+Note: Package names for fpcalc vary by distro. On Debian/WSL use libchromaprint-tools; on Ubuntu use chromaprint-tools. If neither exists, try acoustid-fingerprinter or chromaprint.
 
 Discogs token:
 - For best results with Discogs metadata, get a personal token and configure beets accordingly.

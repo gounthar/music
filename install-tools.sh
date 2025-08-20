@@ -4,7 +4,7 @@ set -euo pipefail
 # install-tools.sh — Bootstrap required tools for the music scripts (Debian/Ubuntu/WSL focused)
 #
 # Installs:
-#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip, chromaprint-tools (fpcalc)
+#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip, libchromaprint-tools (fpcalc) [fallbacks: chromaprint-tools, acoustid-fingerprinter, or chromaprint]
 #   - pip packages: beets[fetchart,lyrics,lastgenre,discogs], mutagen (mid3v2), pyacoustid
 #
 # Flags:
@@ -108,12 +108,18 @@ pip_install_system() {
 }
 
 echo "==> Installing apt packages (ffmpeg jq bc exiftool python3-pip)..."
-PKGS=(ffmpeg jq bc libimage-exiftool-perl python3-pip chromaprint-tools)
+PKGS=(ffmpeg jq bc libimage-exiftool-perl python3-pip)
 # If we'll create a venv (or user asked to use one and none is active), ensure python3-venv is present
 if [[ "$USE_VENV" == "1" && -z "${VIRTUAL_ENV:-}" ]]; then
   PKGS+=(python3-venv)
 fi
 apt_install "${PKGS[@]}" || true
+
+# Ensure fpcalc (Chromaprint) via best-available package
+if ! is_cmd fpcalc; then
+  echo "==> Installing Chromaprint tool (fpcalc)..."
+  apt_install libchromaprint-tools || apt_install chromaprint-tools || apt_install acoustid-fingerprinter || apt_install chromaprint || true
+fi
 
 # Python packages: install either into a virtualenv (preferred if requested/active) or user/system site
 if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then

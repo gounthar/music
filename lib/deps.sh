@@ -99,6 +99,16 @@ ensure_cmd() {
     return 0
   fi
 
+  # Special-case fpcalc: try common provider packages across distros
+  if [ "$cmd" = "fpcalc" ]; then
+    echo "Attempting to install 'fpcalc' via chromaprint packages..."
+    _install_apt chromaprint-tools || _install_apt acoustid-fingerprinter || _install_apt chromaprint || true
+    hash -r 2>/dev/null || true
+    if _is_cmd "$cmd"; then
+      return 0
+    fi
+  fi
+
   # Try apt mapping first if exists
   if [ -n "${_APT_MAP[$cmd]+x}" ]; then
     local pkg="${_APT_MAP[$cmd]}"
