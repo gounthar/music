@@ -197,32 +197,6 @@ Remove duplicate files suffixed with “ (n)” if content-identical to the orig
 
 ---
 
-### copy-if-newer.sh
-
-Propagate updated scripts into a target tree based on modification time.
-
-- Synopsis:
-  - For each `.ps1` or `.sh` file in the current directory, find files with the same name under `TARGET_DIR` and copy if the source is newer. Also (by default) propagates each script’s sibling `lib/deps.sh`.
-- Arguments:
-  - None. Edit/override:
-    - `SOURCE_DIR="."`
-    - `TARGET_DIR="/mnt/c/Users/User/Music"`
-    - `COPY_LIB=1` (copy sibling lib/deps.sh when copying a .sh)
-    - `SYNC_BEFORE=1` (run `./sync-deps-lib.sh --quiet` before copying)
-- Behavior:
-  - Recursively searches the target tree. Copies with `cp -p` if source is newer.
-  - If no matches are found, optionally copy to a user-specified subdirectory (Enter for root).
-- Outputs:
-  - Updated script files under `TARGET_DIR` where applicable.
-- Dependencies:
-  - `find`, `cp`.
-- Example:
-  ```bash
-  TARGET_DIR="/mnt/c/Users/User/Music" ./copy-if-newer.sh
-  ```
- 
----
-
 ### copy-playlist.ps1
 
 Copy files referenced by an M3U/M3U8 playlist into a destination folder.
