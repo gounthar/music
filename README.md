@@ -18,6 +18,7 @@ The scripts now work from anywhere (any working directory) and use environment-d
   - Python: pyacoustid (AcoustID client library used by beets’ chroma)
   - exiftool (optional but helpful)
   - GNU coreutils: find, xargs, sed, awk, tr, sha256sum, md5sum, cmp, realpath
+  - PowerShell 5+ (Windows) or PowerShell 7+ (cross-platform) for running .ps1 scripts like copy-playlist.ps1
 - WSL notes:
   - Windows drive paths appear under /mnt/c/...
   - Ensure your audio paths match your setup.
@@ -219,8 +220,42 @@ Propagate updated scripts into a target tree based on modification time.
   ```bash
   TARGET_DIR="/mnt/c/Users/User/Music" ./copy-if-newer.sh
   ```
-
+ 
 ---
+
+### copy-playlist.ps1
+
+Copy files referenced by an M3U/M3U8 playlist into a destination folder.
+
+- Synopsis:
+  - Reads a playlist file, resolves entries (absolute or relative to the playlist’s directory), and copies files to the destination. If a file resides under `SourceRoot`, its subpath is preserved under `Destination`; otherwise only the filename is used.
+- Parameters:
+  - `PlaylistPath` (mandatory): Full path to the `.m3u` or `.m3u8` file.
+  - `Destination` (mandatory): Destination root directory (created if it does not exist).
+  - `SourceRoot` (optional): Root used to preserve relative subpaths when a source file lies under it.
+  - `Encoding` (optional, default `UTF8`): Encoding used to read the playlist.
+  - `NoClobber` (switch): If set, never overwrite existing files (skip regardless of timestamps).
+- Behavior:
+  - Creates target directories as needed.
+  - Copies when target missing; updates when source is newer unless `-NoClobber`; otherwise skips.
+  - Honors `-WhatIf`/`-Confirm` and `-Verbose`.
+- Dependencies:
+  - PowerShell 5+ (Windows PowerShell) or PowerShell 7+ (pwsh).
+
+- Examples:
+  ```powershell
+  # Basic copy
+  .\copy-playlist.ps1 -PlaylistPath 'C:\Playlists\gym.m3u' -Destination 'E:\Music'
+
+  # Preserve tree relative to your MP3 root
+  .\copy-playlist.ps1 -PlaylistPath 'C:\Playlists\gym.m3u' -Destination 'E:\Music' -SourceRoot 'C:\Users\User\Music\mp3'
+
+  # Preview only (no changes)
+  .\copy-playlist.ps1 -PlaylistPath 'C:\Playlists\gym.m3u' -Destination 'E:\Music' -WhatIf
+
+  # Be verbose and never overwrite
+  .\copy-playlist.ps1 -PlaylistPath 'C:\Playlists\gym.m3u' -Destination 'E:\Music' -NoClobber -Verbose
+  ```
 
 ### mka2flac.sh
 
