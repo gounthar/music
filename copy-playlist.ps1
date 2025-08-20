@@ -196,7 +196,7 @@ foreach ($entry in $playlistFiles) {
       Write-Host "No more space left copying: $relative"
       break
     } else {
-      Write-Warning "Error copying $relative: $($_.Exception.Message)"
+      Write-Warning "Error copying $relative : $($_.Exception.Message)"
     }
   }
 
