@@ -101,6 +101,7 @@ FLAT_DIR="/mnt/c/Users/User/Music/MyFlat" ./create-genre-playlist.sh
 
 # Override lossless/mp3 roots for conversion
 LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./organize-music-enhanced.sh
+# See Quickstart below for PRESET_MODE (quality/bitrate), CONVERT_PARALLEL, and DRY_RUN examples.
 ```
 
 ---
@@ -114,7 +115,7 @@ LOSSLESS_DIR="/data/lossless" MP3_DIR="/data/mp3" ./organize-music-enhanced.sh
 - Use de-duplicate.sh to remove duplicate files such as “Track (1).mp3” if they match original content.
 
 3) Build the MP3 tree
-- organize-music-enhanced.sh (canonical)
+- organize-music-enhanced.sh (canonical):
   - Moves existing MP3s into a mirrored MP3 tree, converts lossless files to MP3, supports parallelism and optional artwork embedding.
 
 4) Flatten the MP3 tree for portable consumption
@@ -378,6 +379,15 @@ PRESET_MODE=quality MP3_QUALITY=2 CONVERT_PARALLEL=true ./organize-music-enhance
 
 # Serial/simple run (no parallelism)
 CONVERT_PARALLEL=false ./organize-music-enhanced.sh
+
+# Bitrate-based example (constant bitrate)
+PRESET_MODE=bitrate BITRATE=192k ./organize-music-enhanced.sh
+
+# Convert a single file (if supported)
+# SINGLE_FILE should point to one lossless input to process
+SINGLE_FILE="/path/to/track.flac" ./organize-music-enhanced.sh
+
+# Note: Boolean env vars accept true/false.
 ```
 
 3) Flatten MP3 tree into Bonneville:
