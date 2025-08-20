@@ -4,8 +4,8 @@ set -euo pipefail
 # install-tools.sh — Bootstrap required tools for the music scripts (Debian/Ubuntu/WSL focused)
 #
 # Installs:
-#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip
-#   - pip packages: beets[fetchart,lyrics,lastgenre,discogs], mutagen (mid3v2)
+#   - apt packages: ffmpeg (ffprobe), jq, bc, libimage-exiftool-perl, python3-pip, chromaprint-tools (fpcalc)
+#   - pip packages: beets[fetchart,lyrics,lastgenre,discogs], mutagen (mid3v2), pyacoustid
 #
 # Flags:
 #   --no-sudo         Do not use sudo; print the commands instead
@@ -108,7 +108,7 @@ pip_install_system() {
 }
 
 echo "==> Installing apt packages (ffmpeg jq bc exiftool python3-pip)..."
-PKGS=(ffmpeg jq bc libimage-exiftool-perl python3-pip)
+PKGS=(ffmpeg jq bc libimage-exiftool-perl python3-pip chromaprint-tools)
 # If we'll create a venv (or user asked to use one and none is active), ensure python3-venv is present
 if [[ "$USE_VENV" == "1" && -z "${VIRTUAL_ENV:-}" ]]; then
   PKGS+=(python3-venv)
@@ -141,9 +141,11 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U \"beets[fetchart,lyrics,lastgenre,discogs]\""
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U mutagen"
+    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pyacoustid"
   else
     "$VENV_BIN/python" -m pip install -U "beets[fetchart,lyrics,lastgenre,discogs]"
     "$VENV_BIN/python" -m pip install -U mutagen
+    "$VENV_BIN/python" -m pip install -U pyacoustid
   fi
 
   echo "==> Virtualenv ready. To use CLI tools in your shell session, run:"
@@ -160,9 +162,11 @@ else
   if [[ "$ENSURE_PIP_SYSTEM" == "1" ]]; then
     pip_install_system "beets[fetchart,lyrics,lastgenre,discogs]"
     pip_install_system "mutagen"
+    pip_install_system "pyacoustid"
   else
     pip_install_user "beets[fetchart,lyrics,lastgenre,discogs]"
     pip_install_user "mutagen"
+    pip_install_user "pyacoustid"
   fi
 fi
 
@@ -172,6 +176,7 @@ ensure_user_local_bin
   echo "# Versions"
   is_cmd ffmpeg && ffmpeg -version | head -n1 || echo "ffmpeg: not found"
   is_cmd ffprobe && ffprobe -version | head -n1 || echo "ffprobe: not found"
+  is_cmd fpcalc && fpcalc -version || echo "fpcalc: not found"
   is_cmd jq && jq --version || echo "jq: not found"
   is_cmd bc && bc --version 2>/dev/null | head -n1 || echo "bc: not found"
   is_cmd exiftool && exiftool -ver || echo "exiftool: not found"

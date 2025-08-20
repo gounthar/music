@@ -7,7 +7,7 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
-    ensure_deps python3 pip beet || { echo "Missing dependencies (python3/pip/beet)" >&2; exit 1; }
+    ensure_deps python3 pip beet fpcalc || { echo "Missing dependencies (python3/pip/beet/fpcalc)" >&2; exit 1; }
     add_user_local_bin_to_path
 fi
 
@@ -33,8 +33,8 @@ import:
     resume: no
     incremental: yes
 
-# Updated plugins - removed acousticbrainz, added lastgenre
-plugins: fetchart lyrics lastgenre discogs
+# Plugins: enable acoustic fingerprinting (chroma) plus fetchart, lyrics, lastgenre, discogs
+plugins: chroma fetchart lyrics lastgenre discogs
 
 fetchart:
     auto: yes
@@ -43,6 +43,14 @@ fetchart:
 lyrics:
     auto: yes
     sources: genius musixmatch google
+
+# Chroma plugin for acoustic fingerprinting (AcoustID)
+chroma:
+    auto: yes
+
+# Optional: AcoustID API key (recommended for better lookups)
+# acoustid:
+#     apikey: YOUR_ACOUSTID_API_KEY
 
 # LastGenre plugin for better genre detection
 lastgenre:

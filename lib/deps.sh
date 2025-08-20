@@ -79,6 +79,7 @@ _install_pip_system() {
 declare -A _APT_MAP
 _APT_MAP[ffmpeg]=ffmpeg          # provides ffmpeg + ffprobe
 _APT_MAP[ffprobe]=ffmpeg
+_APT_MAP[fpcalc]=chromaprint-tools
 _APT_MAP[jq]=jq
 _APT_MAP[bc]=bc
 _APT_MAP[exiftool]=libimage-exiftool-perl
