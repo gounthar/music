@@ -18,6 +18,17 @@ FLAT_DIR="${FLAT_DIR:-/mnt/c/Users/User/Music/Bonneville}"
 MUSIC_DIR="${1:-${MUSIC_DIR:-$FLAT_DIR}}"
 PLAYLIST_DIR="${2:-${PLAYLIST_DIR:-$MUSIC_DIR}}"
 
+if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
+  echo "Usage: $0 [MUSIC_DIR] [PLAYLIST_DIR]"
+  echo "Defaults: MUSIC_DIR=$FLAT_DIR, PLAYLIST_DIR same as MUSIC_DIR"
+  exit 0
+fi
+
+if [[ ! -d "$MUSIC_DIR" ]]; then
+  echo "Error: MUSIC_DIR does not exist: $MUSIC_DIR" >&2
+  exit 1
+fi
+
 # Check for required tools
 if ! command -v mid3v2 >/dev/null 2>&1; then
   echo "Error: mid3v2 (from python-mutagen) is required. Try: sudo apt-get install mutagen-tools"
@@ -28,7 +39,7 @@ fi
 mkdir -p "$PLAYLIST_DIR"
 
 # Change to the music directory to get relative paths
-cd "$MUSIC_DIR" || { echo "Error: MUSIC_DIR not found or not accessible: $MUSIC_DIR"; exit 1; }
+cd "$MUSIC_DIR" || { echo "Failed to change directory to: $MUSIC_DIR" >&2; exit 1; }
 
 # Create a temporary directory for new playlists
 TEMP_DIR=$(mktemp -d)
@@ -37,7 +48,7 @@ echo "Using temporary directory: $TEMP_DIR"
 # Find all mp3 files (case-insensitive), extract the artist tag, and create playlists
 find . -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     # Use mid3v2 (from python-mutagen) to get the artist tag
-    artist=$(mid3v2 -l "$file" | grep -Ei "TPE1|TP1" | awk -F= '{print $2}' | head -n1)
+    artist=$(mid3v2 -l "$file" | grep -Eim1 'TPE1|TP1' | awk -F= '{print $2}')
 
     # If the artist tag is empty, skip or set to "Unknown"
     if [[ -z "$artist" ]]; then
