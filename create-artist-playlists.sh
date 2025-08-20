@@ -9,7 +9,7 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
-    ensure_deps python3 pip mid3v2 || { echo "Missing dependencies (python3/pip/mid3v2)"; exit 1; }
+    ensure_deps python3 pip mid3v2 || { echo "Missing dependencies (python3/pip/mid3v2). Aborting." >&2; exit 1; }
     add_user_local_bin_to_path
 fi
 
@@ -20,7 +20,7 @@ PLAYLIST_DIR="${2:-${PLAYLIST_DIR:-$MUSIC_DIR}}"
 
 if [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]]; then
   echo "Usage: $0 [MUSIC_DIR] [PLAYLIST_DIR]"
-  echo "Defaults: MUSIC_DIR=$FLAT_DIR, PLAYLIST_DIR same as MUSIC_DIR"
+  echo "Defaults: MUSIC_DIR defaults to \$FLAT_DIR or \$MUSIC_DIR if set; PLAYLIST_DIR defaults to MUSIC_DIR unless \$PLAYLIST_DIR is set"
   exit 0
 fi
 
@@ -44,11 +44,15 @@ cd "$MUSIC_DIR" || { echo "Failed to change directory to: $MUSIC_DIR" >&2; exit 
 # Create a temporary directory for new playlists
 TEMP_DIR=$(mktemp -d)
 echo "Using temporary directory: $TEMP_DIR"
+trap 'rm -rf "$TEMP_DIR"' EXIT
 
 # Find all mp3 files (case-insensitive), extract the artist tag, and create playlists
 find . -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     # Use mid3v2 (from python-mutagen) to get the artist tag
-    artist=$(mid3v2 -l "$file" | grep -Eim1 'TPE1|TP1' | awk -F= '{print $2}')
+    artist=$(mid3v2 -l "$file" \
+      | grep -Eim1 '^(TPE1|TP1)=' \
+      | awk -F= '{print $2}' \
+      | sed -e 's/\r$//' -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')
 
     # If the artist tag is empty, skip or set to "Unknown"
     if [[ -z "$artist" ]]; then
@@ -60,6 +64,10 @@ find . -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     # - replace spaces with _
     # - strip invalid Windows filename characters: : * ? " < > |
     clean_artist=$(printf '%s' "$artist" | tr '/\\' '__' | tr ' ' '_' | tr -d ':*?"<>|')
+    # Avoid reserved device names on Windows
+    case "$clean_artist" in
+      CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]) clean_artist="${clean_artist}_" ;;
+    esac
 
     # Remove the ./ prefix from the filename
     filename="${file#./}"
@@ -71,6 +79,10 @@ done
 # Now replace only the artist playlists in the destination
 echo "Updating artist playlists..."
 if compgen -G "$TEMP_DIR/*.m3u" > /dev/null; then
+  # Normalize each playlist before moving
+  for f in "$TEMP_DIR"/*.m3u; do
+      LC_ALL=C sort -u -o "$f" "$f"
+  done
   for playlist in "$TEMP_DIR"/*.m3u; do
       playlist_name=$(basename "$playlist")
       mv -f "$playlist" "$PLAYLIST_DIR/$playlist_name"
