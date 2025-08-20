@@ -91,34 +91,51 @@ convert_to_mp3() {
     local lossless_file="$1"
     local target_mp3="$2"
 
+    # Validate source file exists
+    if [[ ! -f "$lossless_file" ]]; then
+        echo "Error: source not found: $lossless_file" >&2
+        return 1
+    fi
+
     if $VERBOSE; then
         echo "Converting: $lossless_file → $target_mp3"
     fi
 
-    # Build ffmpeg command:
-    # - Map ONLY the first audio stream
-    # - Map ONLY attached picture (skip true video to avoid MP3 muxer errors)
-    local ffmpeg_cmd="ffmpeg -nostdin -hide_banner -i \"$lossless_file\" -map 0:a:0 -c:a libmp3lame"
+    # Build ffmpeg argv as an array for safety (no eval)
+    local cmd=()
+    cmd+=(ffmpeg -nostdin -hide_banner)
+    cmd+=(-i "$lossless_file")
+    cmd+=(-map 0:a:0 -c:a libmp3lame)
 
     if [[ "$PRESET_MODE" == "quality" ]]; then
-        ffmpeg_cmd+=" -q:a $MP3_QUALITY"
+        cmd+=(-q:a "$MP3_QUALITY")
     else
-        ffmpeg_cmd+=" -b:a $BITRATE"
+        cmd+=(-b:a "$BITRATE")
     fi
 
     # Copy tags and write ID3v2
-    ffmpeg_cmd+=" -map_metadata 0 -id3v2_version 3 -write_id3v2 1"
+    cmd+=(-map_metadata 0 -id3v2_version 3 -write_id3v2 1)
 
     if $PRESERVE_ARTWORK; then
         # Map only attached picture stream (if present) and convert to JPEG, mark as cover
-        ffmpeg_cmd+=" -map 0:v:m:attached_pic? -c:v mjpeg -disposition:v attached_pic -metadata:s:v title=\"Album cover\" -metadata:s:v comment=\"Cover (front)\""
+        cmd+=(-map 0:v:m:attached_pic? -c:v mjpeg -disposition:v attached_pic)
+        cmd+=(-metadata:s:v "title=Album cover" -metadata:s:v "comment=Cover (front)")
     fi
 
-    ffmpeg_cmd+=" \"$target_mp3\""
+    cmd+=("$target_mp3")
 
     if ! $DRY_RUN; then
         mkdir -p "$(dirname "$target_mp3")"
-        eval "$ffmpeg_cmd" </dev/null
+        if $VERBOSE; then
+            "${cmd[@]}"
+        else
+            "${cmd[@]}" 2>/dev/null
+        fi
+        local status=$?
+        if (( status != 0 )); then
+            echo "Conversion failed: $lossless_file" >&2
+            return "$status"
+        fi
     fi
 }
 
