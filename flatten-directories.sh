@@ -56,9 +56,9 @@ find "$SOURCE_ROOT" -mindepth 2 -type f -iname "*.mp3" -print0 | while IFS= read
     ((counter++))
   done
 
-  # Move the file to the flat destination
-  mv "$filepath" "$target_file"
-  echo "Moved: $filepath -> $target_file"
+  # Copy the file to the flat destination (preserve mode and timestamps; avoid ownership; allow overwrite; CoW if supported)
+  cp --preserve=mode,timestamps --reflink=auto "$filepath" "$target_file"
+  echo "Copied: $filepath -> $target_file"
 done
 
-echo "Flattening complete. Files moved to: $DEST_DIR"
+echo "Flattening complete. Files copied to: $DEST_DIR"
