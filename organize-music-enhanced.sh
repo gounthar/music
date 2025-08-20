@@ -184,6 +184,16 @@ if $CONVERT_MISSING_MP3; then
              -name "*.wav" -o -name "*.aiff" -o -name "*.ape" -o -name "*.wv" \) \
              -not -path "$MP3_ROOT/*" -print0)
     
+    # If a SINGLE_FILE path is provided, restrict processing to that file
+    if [[ -n "${SINGLE_FILE:-}" ]]; then
+        if [[ -f "$SINGLE_FILE" ]]; then
+            file_list=( "$SINGLE_FILE" )
+        else
+            echo "SINGLE_FILE not found: $SINGLE_FILE" >&2
+            file_list=()
+        fi
+    fi
+
     # Process conversion
     if $CONVERT_PARALLEL; then
         if $VERBOSE; then
