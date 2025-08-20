@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 # mka-to-flac.sh  —  Lossless batch converter
 
+# Load dependency helpers and ensure required tools (if available)
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
+  # shellcheck source=lib/deps.sh
+  . "$SCRIPT_DIR/lib/deps.sh"
+  add_user_local_bin_to_path
+  ensure_deps ffmpeg ffprobe
+fi
+
 shopt -s nullglob                # No matches → empty array, avoids literal *.mka
 for f in "$@"; do                # Accepts file list or glob, e.g. *.mka
   base="${f%.*}"
@@ -16,4 +25,3 @@ for f in "$@"; do                # Accepts file list or glob, e.g. *.mka
            -map_metadata 0 "$base.flac"
   fi
 done
-

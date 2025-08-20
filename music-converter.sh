@@ -1,8 +1,18 @@
 #!/bin/bash
+# Load dependency helpers and ensure required tools (if available)
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
+    # shellcheck source=lib/deps.sh
+    . "$SCRIPT_DIR/lib/deps.sh"
+    ensure_deps ffmpeg ffprobe || { echo "Missing dependencies (ffmpeg/ffprobe)" >&2; exit 1; }
+    add_user_local_bin_to_path
+fi
 
 ## Configuration
-MUSIC_ROOT="/mnt/c/Users/User/Music/lossless"
-MP3_ROOT="$MUSIC_ROOT/../mp3"
+LOSSLESS_DIR="${LOSSLESS_DIR:-/mnt/c/Users/User/Music/lossless}"
+MP3_DIR="${MP3_DIR:-/mnt/c/Users/User/Music/mp3}"
+MUSIC_ROOT="${MUSIC_ROOT:-$LOSSLESS_DIR}"
+MP3_ROOT="${MP3_ROOT:-$MP3_DIR}"
 DRY_RUN=false
 VERBOSE=true
 CONVERT_MISSING_MP3=true
