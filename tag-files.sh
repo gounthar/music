@@ -15,13 +15,26 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
         BEET_EXE="$(command -v beet)"
         PY_INTERP=""
         if head -n1 "$BEET_EXE" | grep -q '^#!'; then
-            PY_INTERP="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+            # Read and parse shebang interpreter safely
+            SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+            # Tokenize into words
+            read -r -a _tok <<<"$SHEBANG_LINE"
+            FIRST="${_tok[0]:-}"
+            SECOND="${_tok[1]:-}"
+            # If using /usr/bin/env, pick the second token (the interpreter); else pick the first
+            if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ] && [ -n "$SECOND" ]; then
+                PY_INTERP="$SECOND"
+            else
+                PY_INTERP="$FIRST"
+            fi
         fi
+        # Trim whitespace and fallback
+        PY_INTERP="$(echo "${PY_INTERP:-}" | awk '{$1=$1;print}')"
         if [ -z "$PY_INTERP" ]; then
             PY_INTERP="python3"
         fi
         # Detect virtualenv; use --user only when not in venv to avoid permission issues
-        if "$PY_INTERP" -c "import sys; print(getattr(sys, 'base_prefix', sys.prefix) != sys.prefix)" | grep -q 'True'; then
+        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -q 'True'; then
             "$PY_INTERP" -m pip install -U pyacoustid || true
         else
             "$PY_INTERP" -m pip install -U --user pyacoustid || true
