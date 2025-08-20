@@ -60,7 +60,7 @@ library: ~/.config/beets/musiclibrary.db
 
 import:
     write: yes
-    move: no
+    move: yes
     resume: no
     incremental: yes
 
