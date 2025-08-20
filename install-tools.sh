@@ -181,8 +181,17 @@ if command -v beet >/dev/null 2>&1; then
   BEET_EXE="$(command -v beet)"
   PY_INTERP=""
   if head -n1 "$BEET_EXE" | grep -q '^#!'; then
-    PY_INTERP="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+    SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+    read -r -a _tok <<<"$SHEBANG_LINE"
+    FIRST="${_tok[0]:-}"
+    SECOND="${_tok[1]:-}"
+    if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ] && [ -n "$SECOND" ]; then
+      PY_INTERP="$SECOND"
+    else
+      PY_INTERP="$FIRST"
+    fi
   fi
+  PY_INTERP="$(echo "${PY_INTERP:-}" | awk '{$1=$1;print}')"
   if [[ -z "$PY_INTERP" ]]; then
     PY_INTERP="python3"
   fi
