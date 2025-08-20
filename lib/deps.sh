@@ -79,7 +79,7 @@ _install_pip_system() {
 declare -A _APT_MAP
 _APT_MAP[ffmpeg]=ffmpeg          # provides ffmpeg + ffprobe
 _APT_MAP[ffprobe]=ffmpeg
-_APT_MAP[fpcalc]=chromaprint-tools
+_APT_MAP[fpcalc]=libchromaprint-tools
 _APT_MAP[jq]=jq
 _APT_MAP[bc]=bc
 _APT_MAP[exiftool]=libimage-exiftool-perl
@@ -90,6 +90,7 @@ _APT_MAP[python3]=python3
 declare -A _PIP_MAP
 _PIP_MAP[beet]='beets[fetchart,lyrics,lastgenre,discogs]'
 _PIP_MAP[mid3v2]=mutagen         # mid3v2 comes from mutagen
+_PIP_MAP[acoustid]=pyacoustid    # provides the 'acoustid' Python module used by beets' chroma
 
 # Attempt to install a single command
 ensure_cmd() {
@@ -102,9 +103,25 @@ ensure_cmd() {
   # Special-case fpcalc: try common provider packages across distros
   if [ "$cmd" = "fpcalc" ]; then
     echo "Attempting to install 'fpcalc' via chromaprint packages..."
-    _install_apt chromaprint-tools || _install_apt acoustid-fingerprinter || _install_apt chromaprint || true
+    _install_apt libchromaprint-tools || _install_apt chromaprint-tools || _install_apt acoustid-fingerprinter || _install_apt chromaprint || true
     hash -r 2>/dev/null || true
     if _is_cmd "$cmd"; then
+      return 0
+    fi
+  fi
+
+  # Special-case acoustid: ensure Python module available
+  if [ "$cmd" = "acoustid" ]; then
+    echo "Ensuring Python module 'acoustid' (pyacoustid)..."
+    if python3 -c "import acoustid" >/dev/null 2>&1; then
+      return 0
+    fi
+    if [ "${ENSURE_PIP_SYSTEM:-0}" = "1" ]; then
+      _install_pip_system pyacoustid || true
+    else
+      _install_pip_user pyacoustid || true
+    fi
+    if python3 -c "import acoustid" >/dev/null 2>&1; then
       return 0
     fi
   fi

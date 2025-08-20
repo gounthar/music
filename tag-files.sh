@@ -7,8 +7,26 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     # shellcheck source=lib/deps.sh
     . "$SCRIPT_DIR/lib/deps.sh"
-    ensure_deps python3 pip beet fpcalc || { echo "Missing dependencies (python3/pip/beet/fpcalc)" >&2; exit 1; }
+    ensure_deps python3 pip beet fpcalc acoustid || { echo "Missing dependencies (python3/pip/beet/fpcalc/acoustid)" >&2; exit 1; }
     add_user_local_bin_to_path
+
+    # Ensure pyacoustid is installed in the same Python environment as 'beet'
+    if command -v beet >/dev/null 2>&1; then
+        BEET_EXE="$(command -v beet)"
+        PY_INTERP=""
+        if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+            PY_INTERP="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+        fi
+        if [ -z "$PY_INTERP" ]; then
+            PY_INTERP="python3"
+        fi
+        # Detect virtualenv; use --user only when not in venv to avoid permission issues
+        if "$PY_INTERP" -c "import sys; print(getattr(sys, 'base_prefix', sys.prefix) != sys.prefix)" | grep -q 'True'; then
+            "$PY_INTERP" -m pip install -U pyacoustid || true
+        else
+            "$PY_INTERP" -m pip install -U --user pyacoustid || true
+        fi
+    fi
 fi
 
 

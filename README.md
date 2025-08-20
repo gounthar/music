@@ -77,7 +77,7 @@ SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/deps.sh
 . "$SCRIPT_DIR/lib/deps.sh"
 add_user_local_bin_to_path
-ensure_deps python3 pip beet fpcalc mid3v2 exiftool ffmpeg ffprobe jq bc
+ensure_deps python3 pip beet fpcalc acoustid mid3v2 exiftool ffmpeg ffprobe jq bc
 ```
 
 Behavior:
