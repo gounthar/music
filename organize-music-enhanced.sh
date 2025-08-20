@@ -79,7 +79,8 @@ extract_artwork() {
     local input="$1"
     local output="$2"
     
-    if ! $PRESERVE_ARTWORK; then
+    # Skip if artwork preservation is disabled or in DRY_RUN mode
+    if ! $PRESERVE_ARTWORK || $DRY_RUN; then
         return
     fi
 
