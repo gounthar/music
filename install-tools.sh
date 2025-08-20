@@ -176,6 +176,27 @@ else
   fi
 fi
 
+echo "==> Ensuring 'acoustid' module is present for the Python env used by 'beet'..."
+if command -v beet >/dev/null 2>&1; then
+  BEET_EXE="$(command -v beet)"
+  PY_INTERP=""
+  if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+    PY_INTERP="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+  fi
+  if [[ -z "$PY_INTERP" ]]; then
+    PY_INTERP="python3"
+  fi
+  NEEDS_INSTALL="$("$PY_INTERP" -c 'import importlib; print("0" if importlib.util.find_spec("acoustid") else "1")' 2>/dev/null || echo 1)"
+  if [[ "$NEEDS_INSTALL" == "1" ]]; then
+    IN_VENV="$("$PY_INTERP" -c 'import sys; print("1" if getattr(sys, "base_prefix", sys.prefix) != sys.prefix else "0")' 2>/dev/null || echo 0)"
+    if [[ "$IN_VENV" == "1" ]]; then
+      run_cmd "$PY_INTERP" -m pip install -U pyacoustid || true
+    else
+      run_cmd "$PY_INTERP" -m pip install -U --user pyacoustid || true
+    fi
+  fi
+fi
+
 echo "==> Verifying installations (versions)..."
 ensure_user_local_bin
 {
