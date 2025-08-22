@@ -90,12 +90,12 @@ ensure_user_local_bin() {
   esac
 }
 
-# Install a pip package for the user (unless in a venv, then use system)
+# Install a pip package for the user (in a venv, install into the venv)
 pip_install_user() {
   if [[ -n "${VIRTUAL_ENV:-}" ]]; then
-    echo "Virtualenv detected; using system pip install for: $1"
-    pip_install_system "$1" || return 1
-    return 0
+    echo "Virtualenv detected; installing into venv for: $1"
+    run_cmd "${VIRTUAL_ENV}/bin/python" -m pip install -U -- "$1"
+    return $?
   fi
   ensure_user_local_bin
   run_cmd python3 -m pip install -U --user -- "$1"
@@ -105,14 +105,26 @@ pip_install_user() {
 pip_install_system() {
   if [[ "$NO_SUDO" == "1" ]]; then
     echo "NO_SUDO=1 set; please run:" >&2
-    echo "  sudo python3 -m pip install -U \"$1\"" >&2
+    if python3 -m pip help install 2>/dev/null | grep -q -- '--break-system-packages'; then
+      echo "  sudo python3 -m pip install -U --break-system-packages \"$1\"" >&2
+    else
+      echo "  sudo python3 -m pip install -U \"$1\"" >&2
+    fi
     return 1
   fi
   if can_sudo; then
-    run_cmd sudo python3 -m pip install -U -- "$1"
+    if python3 -m pip help install 2>/dev/null | grep -q -- '--break-system-packages'; then
+      run_cmd sudo python3 -m pip install -U --break-system-packages -- "$1"
+    else
+      run_cmd sudo python3 -m pip install -U -- "$1"
+    fi
   else
     echo "sudo not available; please run as root:" >&2
-    echo "  python3 -m pip install -U \"$1\"" >&2
+    if python3 -m pip help install 2>/dev/null | grep -q -- '--break-system-packages'; then
+      echo "  python3 -m pip install -U --break-system-packages \"$1\"" >&2
+    else
+      echo "  python3 -m pip install -U \"$1\"" >&2
+    fi
     return 1
   fi
 }
