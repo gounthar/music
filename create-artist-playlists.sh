@@ -63,7 +63,7 @@ find . -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     # - replace / and \ with _
     # - replace spaces with _
     # - strip invalid Windows filename characters: : * ? " < > |
-    clean_artist=$(printf '%s' "$artist" | tr '/\\' '__' | tr ' ' '_' | tr -d ':*?"<>|')
+    clean_artist=$(printf '%s' "$artist" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' -e "s/['\",\\/:*?<>|]/_/g" -e 's/[[:space:]]\+/_/g' -e 's/_\+/_/g')
     # Avoid reserved device names on Windows
     case "$clean_artist" in
       CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9]) clean_artist="${clean_artist}_" ;;

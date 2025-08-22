@@ -82,9 +82,6 @@ lyrics:
 chroma:
     auto: yes
 
-# Optional: AcoustID API key (recommended for better lookups)
-# acoustid:
-#     apikey: YOUR_ACOUSTID_API_KEY
 
 # LastGenre plugin for better genre detection
 lastgenre:
