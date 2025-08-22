@@ -24,11 +24,25 @@ fi
 sanitize_filename() {
     local input
     input="$1"
-    # trim and normalize: remove leading/trailing whitespace; replace spaces/commas/slashes/quotes/colons with underscores; collapse multiple underscores
-    echo "$input" \
-      | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' \
-      | tr "[:space:],\"/:'" '_' \
-      | sed -e 's/_\+/_/g'
+    # Windows-safe sanitization:
+    # - Trim leading/trailing whitespace
+    # - Replace reserved chars \ / : * ? " < > | and control chars with underscores
+    # - Collapse any whitespace runs to single underscores
+    # - Strip trailing spaces/dots; replace leading dots with underscore
+    # - Collapse multiple underscores
+    # - Ensure non-empty; fallback to "untitled"
+    local sanitized
+    sanitized=$(printf '%s' "$input" \
+      | sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+      | sed -e 's/[[:cntrl:]]/_/g' \
+      | sed -e 's/[\/\\:*?"<>|]/_/g' \
+      | tr -s '[:space:]' '_' \
+      | sed -e 's/[.[:space:]]\+$//' -e 's/^\.+/_/' -e 's/_\+/_/g' -e 's/^_*$//' )
+    if [ -z "$sanitized" ]; then
+        echo "untitled"
+    else
+        echo "$sanitized"
+    fi
 }
 
 # Function to extract artist name
