@@ -25,7 +25,7 @@ sanitize_filename() {
     local input
     input="$1"
     # trim, remove commas/slashes/quotes/colons, replace spaces with underscores
-    echo "$input" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' -e "s/[,'\"\/:_]/_/g" -e 's/[[:space:]]\+/_/g' -e 's/_\+/_/g'
+    echo "$input" | sed -e 's/^[[:space:]]*//;s/[[:space:]]*$//' -e 's/[,"'"'\/:_]/_/g' -e 's/[[:space:]]\+/_/g' -e 's/_\+/_/g'
 }
 
 # Function to extract artist name
