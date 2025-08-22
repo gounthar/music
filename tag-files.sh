@@ -53,6 +53,10 @@ OUTPUT_DIR="${OUTPUT_DIR:-$LOSSLESS_DIR}"
 CONFIG_FILE="${BEETS_CONFIG_FILE:-$HOME/.config/beets/config.yaml}"
 if [ ! -f "$CONFIG_FILE" ]; then
 mkdir -p "$(dirname "$CONFIG_FILE")"
+ACOUSTID_YAML=""
+if [ -n "${ACOUSTID_API_KEY:-}" ]; then
+    ACOUSTID_YAML=$'acoustid:\n    apikey: '"${ACOUSTID_API_KEY}"$'\n'
+fi
 cat > "$CONFIG_FILE" <<EOL
 # ~/.config/beets/config.yaml
 directory: $OUTPUT_DIR
@@ -67,10 +71,7 @@ import:
 # Plugins: enable acoustic fingerprinting (chroma) plus fetchart, lyrics, lastgenre, discogs
 plugins: chroma fetchart lyrics lastgenre discogs
 
-acoustid:
-    apikey: YOUR_ACOUSTID_API_KEY
-
-fetchart:
+${ACOUSTID_YAML}fetchart:
     auto: yes
     minwidth: 0
 
