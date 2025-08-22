@@ -14,7 +14,7 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     if command -v beet >/dev/null 2>&1; then
         BEET_EXE="$(command -v beet)"
         PY_INTERP=""
-        if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+        if head -n1 "$BEET_EXE" | grep -aq '^#!'; then
             # Read and parse shebang interpreter safely
             SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
             # Tokenize into words
@@ -34,7 +34,7 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
             PY_INTERP="python3"
         fi
         # Detect virtualenv; use --user only when not in venv to avoid permission issues
-        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -q 'True'; then
+        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -aq 'True'; then
             "$PY_INTERP" -m pip install -U pyacoustid || true
         else
             "$PY_INTERP" -m pip install -U --user pyacoustid || true
