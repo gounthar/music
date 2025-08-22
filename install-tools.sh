@@ -11,7 +11,9 @@ set -euo pipefail
 #   --no-sudo         Do not use sudo; print the commands instead
 #   --pip-system      Install Python packages system-wide (default: --user)
 #   --dry-run         Print actions without executing
-# bash install-tools.sh --use-venv --venv .venv
+#   --use-venv        Use a Python virtual environment for pip installs
+#   --venv <dir>      Specify virtual environment directory (default: .venv)
+#
 # Environment (alternative to flags):
 #   NO_SUDO=1           (same as --no-sudo)
 #   ENSURE_PIP_SYSTEM=1 (same as --pip-system)
@@ -21,12 +23,14 @@ set -euo pipefail
 #   ./install-tools.sh
 #   NO_SUDO=1 DRY_RUN=1 ./install-tools.sh
 
+# Read environment variables or set defaults
 NO_SUDO="${NO_SUDO:-0}"
 ENSURE_PIP_SYSTEM="${ENSURE_PIP_SYSTEM:-0}"
 DRY_RUN="${DRY_RUN:-0}"
 USE_VENV="${USE_VENV:-0}"
 VENV_DIR="${VENV_DIR:-.venv}"
 
+# Parse command-line arguments
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --no-sudo) NO_SUDO=1; shift ;;
@@ -38,11 +42,14 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+# Helper: check if a command exists
 is_cmd() { command -v "$1" >/dev/null 2>&1; }
 
+# Helper: check if sudo and apt-get are available
 can_sudo() { command -v sudo >/dev/null 2>&1; }
 has_apt() { command -v apt-get >/dev/null 2>&1; }
 
+# Helper: run a command, or just print it if DRY_RUN is set
 run_cmd() {
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] $*"
@@ -53,6 +60,7 @@ run_cmd() {
   fi
 }
 
+# Install apt packages, using sudo if available and not disabled
 apt_install() {
   local pkgs=("$@")
   if ! has_apt; then
@@ -61,7 +69,7 @@ apt_install() {
   fi
   if [[ "$NO_SUDO" == "1" ]]; then
     echo "NO_SUDO=1 set; please run:" >&2
-    echo "  sudo apt-get update && sudo apt-get install -y ${pkgs[@]}" >&2
+    echo "  sudo apt-get update && sudo apt-get install -y ${pkgs[*]}" >&2
     return 1
   fi
   if can_sudo; then
@@ -69,11 +77,12 @@ apt_install() {
     run_cmd sudo apt-get install -y "${pkgs[@]}"
   else
     echo "sudo not available; please run as root:" >&2
-    echo "  apt-get update && apt-get install -y ${pkgs[@]}" >&2
+    echo "  apt-get update && apt-get install -y ${pkgs[*]}" >&2
     return 1
   fi
 }
 
+# Ensure ~/.local/bin is in PATH for pip --user installs
 ensure_user_local_bin() {
   case ":$PATH:" in
     *":$HOME/.local/bin:"*) ;;
@@ -81,8 +90,8 @@ ensure_user_local_bin() {
   esac
 }
 
+# Install a pip package for the user (unless in a venv, then use system)
 pip_install_user() {
-  # In virtualenvs, --user is not allowed; fall back to system install.
   if [[ -n "${VIRTUAL_ENV:-}" ]]; then
     echo "Virtualenv detected; using system pip install for: $1"
     pip_install_system "$1" || return 1
@@ -92,6 +101,7 @@ pip_install_user() {
   run_cmd python3 -m pip install -U --user -- "$1"
 }
 
+# Install a pip package system-wide (using sudo if available)
 pip_install_system() {
   if [[ "$NO_SUDO" == "1" ]]; then
     echo "NO_SUDO=1 set; please run:" >&2
@@ -107,23 +117,25 @@ pip_install_system() {
   fi
 }
 
+# --- Main installation steps ---
+
 echo "==> Installing apt packages (ffmpeg jq bc exiftool python3-pip)..."
 PKGS=(ffmpeg jq bc libimage-exiftool-perl python3-pip)
-# If we'll create a venv (or user asked to use one and none is active), ensure python3-venv is present
+# Add python3-venv if using a venv and not already in one
 if [[ "$USE_VENV" == "1" && -z "${VIRTUAL_ENV:-}" ]]; then
   PKGS+=(python3-venv)
 fi
 apt_install "${PKGS[@]}" || true
 
-# Ensure fpcalc (Chromaprint) via best-available package
+# Try to install fpcalc (Chromaprint) using the best available package
 if ! is_cmd fpcalc; then
   echo "==> Installing Chromaprint tool (fpcalc)..."
   apt_install libchromaprint-tools || apt_install chromaprint-tools || apt_install acoustid-fingerprinter || apt_install chromaprint || true
 fi
 
-# Python packages: install either into a virtualenv (preferred if requested/active) or user/system site
+# Install Python packages, using a venv if requested or active
 if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
-  # Determine venv dir/bin
+  # If already in a venv, use it; otherwise, create one
   if [[ -n "${VIRTUAL_ENV:-}" ]]; then
     VENV_DIR="$VIRTUAL_ENV"
   else
@@ -136,6 +148,7 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   fi
   VENV_BIN="$VENV_DIR/bin"
 
+  # Upgrade pip in the venv
   echo "==> Ensuring venv pip is up-to-date..."
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pip"
@@ -143,6 +156,7 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
     "$VENV_BIN/python" -m pip install -U pip || true
   fi
 
+  # Install required Python packages in the venv
   echo "==> Installing Python packages into virtualenv (beets + plugins, mutagen)..."
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U \"beets[fetchart,lyrics,lastgenre,discogs]\""
@@ -157,6 +171,7 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   echo "==> Virtualenv ready. To use CLI tools in your shell session, run:"
   echo "    source \"$VENV_DIR/bin/activate\""
 else
+  # Not using a venv: upgrade pip and install packages (system or user)
   echo "==> Ensuring pip is up-to-date..."
   if [[ "$DRY_RUN" == "1" ]]; then
     echo "[DRY_RUN] python3 -m pip install -U pip"
@@ -176,16 +191,18 @@ else
   fi
 fi
 
+# Ensure the 'acoustid' Python module is available for the 'beet' command
 echo "==> Ensuring 'acoustid' module is present for the Python env used by 'beet'..."
 if command -v beet >/dev/null 2>&1; then
   BEET_EXE="$(command -v beet)"
   PY_INTERP=""
+  # Try to extract the Python interpreter from the beet shebang
   if head -n1 "$BEET_EXE" | grep -aq '^#!'; then
     SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
     read -r -a _tok <<<"$SHEBANG_LINE"
     FIRST="${_tok[0]:-}"
     if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ]; then
-      # Drop 'env' and optional '-S', then pick the first python-like token.
+      # If using env, find the python interpreter in the shebang
       _rest=("${_tok[@]:1}")
       if [[ "${_rest[0]:-}" == "-S" ]]; then
         _rest=("${_rest[@]:1}")
@@ -202,10 +219,12 @@ if command -v beet >/dev/null 2>&1; then
       PY_INTERP="$FIRST"
     fi
   fi
+  # Fallback to python3 if not found
   PY_INTERP="$(echo "${PY_INTERP:-}" | awk '{$1=$1;print}')"
   if [[ -z "$PY_INTERP" ]]; then
     PY_INTERP="python3"
   fi
+  # Check if acoustid is installed for this interpreter
   NEEDS_INSTALL="$("$PY_INTERP" -c 'import importlib; print("0" if importlib.util.find_spec("acoustid") else "1")' 2>/dev/null || echo 1)"
   if [[ "$NEEDS_INSTALL" == "1" ]]; then
     IN_VENV="$("$PY_INTERP" -c 'import sys; print("1" if getattr(sys, "base_prefix", sys.prefix) != sys.prefix else "0")' 2>/dev/null || echo 0)"
@@ -217,6 +236,7 @@ if command -v beet >/dev/null 2>&1; then
   fi
 fi
 
+# Print versions of installed tools for verification
 echo "==> Verifying installations (versions)..."
 ensure_user_local_bin
 {
