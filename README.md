@@ -50,7 +50,7 @@ Flags:
 - --use-venv / --venv DIR: create/use a virtual environment and install Python deps inside it
 
 Environment equivalents:
-- NO_SUDO=1, ENSURE_PIP_SYSTEM=1, DRY_RUN=1
+- NO_SUDO=1, ENSURE_PIP_SYSTEM=1, DRY_RUN=1, USE_VENV=1, VENV_DIR=.venv
 
 ### Virtual environment (recommended)
 

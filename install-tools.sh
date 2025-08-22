@@ -18,6 +18,8 @@ set -euo pipefail
 #   NO_SUDO=1           (same as --no-sudo)
 #   ENSURE_PIP_SYSTEM=1 (same as --pip-system)
 #   DRY_RUN=1           (same as --dry-run)
+#   USE_VENV=1          (same as --use-venv)
+#   VENV_DIR=.venv      (same as --venv <dir>)
 #
 # Usage:
 #   ./install-tools.sh
@@ -37,7 +39,12 @@ while [[ $# -gt 0 ]]; do
     --pip-system) ENSURE_PIP_SYSTEM=1; shift ;;
     --dry-run) DRY_RUN=1; shift ;;
     --use-venv) USE_VENV=1; shift ;;
-    --venv) VENV_DIR="${2:-.venv}"; shift 2 ;;
+    --venv)
+      if [[ $# -lt 2 || "${2:-}" == -* ]]; then
+        echo "Error: --venv requires a directory argument" >&2
+        exit 2
+      fi
+      VENV_DIR="$2"; shift 2 ;;
     *) echo "Unknown option: $1" >&2; exit 2 ;;
   esac
 done
@@ -74,7 +81,7 @@ apt_install() {
   fi
   if can_sudo; then
     run_cmd sudo apt-get update
-    run_cmd sudo apt-get install -y "${pkgs[@]}"
+    run_cmd sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq "${pkgs[@]}"
   else
     echo "sudo not available; please run as root:" >&2
     echo "  apt-get update && apt-get install -y ${pkgs[*]}" >&2
@@ -163,32 +170,32 @@ if [[ "$USE_VENV" == "1" || -n "${VIRTUAL_ENV:-}" ]]; then
   # Upgrade pip in the venv
   echo "==> Ensuring venv pip is up-to-date..."
   if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pip"
+    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pip setuptools wheel"
   else
-    "$VENV_BIN/python" -m pip install -U pip || true
+    "$VENV_BIN/python" -m pip install -U pip setuptools wheel || true
   fi
 
   # Install required Python packages in the venv
   echo "==> Installing Python packages into virtualenv (beets + plugins, mutagen)..."
   if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U \"beets[fetchart,lyrics,lastgenre,discogs]\""
-    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U mutagen"
-    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U pyacoustid"
+    echo "[DRY_RUN] \"$VENV_BIN/python\" -m pip install -U \"beets[fetchart,lyrics,lastgenre,discogs]\" mutagen pyacoustid"
   else
-    "$VENV_BIN/python" -m pip install -U "beets[fetchart,lyrics,lastgenre,discogs]"
-    "$VENV_BIN/python" -m pip install -U mutagen
-    "$VENV_BIN/python" -m pip install -U pyacoustid
+    "$VENV_BIN/python" -m pip install -U \
+      "beets[fetchart,lyrics,lastgenre,discogs]" \
+      mutagen \
+      pyacoustid
   fi
 
   echo "==> Virtualenv ready. To use CLI tools in your shell session, run:"
   echo "    source \"$VENV_DIR/bin/activate\""
+  echo "    then run: hash -r"
 else
   # Not using a venv: upgrade pip and install packages (system or user)
   echo "==> Ensuring pip is up-to-date..."
   if [[ "$DRY_RUN" == "1" ]]; then
-    echo "[DRY_RUN] python3 -m pip install -U pip"
+    echo "[DRY_RUN] python3 -m pip install -U pip setuptools wheel"
   else
-    python3 -m pip install -U pip || true
+    python3 -m pip install -U pip setuptools wheel || true
   fi
 
   echo "==> Installing Python packages (beets + plugins, mutagen)..."
@@ -210,7 +217,7 @@ if command -v beet >/dev/null 2>&1; then
   PY_INTERP=""
   # Try to extract the Python interpreter from the beet shebang
   if head -n1 "$BEET_EXE" | grep -aq '^#!'; then
-    SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
+    SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//' | tr -d '\r')"
     read -r -a _tok <<<"$SHEBANG_LINE"
     FIRST="${_tok[0]:-}"
     if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ]; then
@@ -260,8 +267,8 @@ ensure_user_local_bin
   is_cmd bc && bc --version 2>/dev/null | head -n1 || echo "bc: not found"
   is_cmd exiftool && exiftool -ver || echo "exiftool: not found"
   is_cmd python3 && python3 --version || echo "python3: not found"
-  is_cmd pip && pip --version || echo "pip: not found"
-  is_cmd beet && beet version || echo "beet: not found"
+  python3 -m pip --version 2>/dev/null || echo "pip (python3): not found"
+  if is_cmd beet; then command -v beet; beet version; else echo "beet: not found"; fi
   is_cmd mid3v2 && mid3v2 --version || echo "mid3v2: not found"
 } | sed 's/^/  /'
 
