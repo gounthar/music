@@ -93,7 +93,7 @@ get_genre() {
     
     # Fallback to ID3 tags
     if [[ -z "$genre" ]] && command -v mid3v2 &> /dev/null; then
-        genre=$({ mid3v2 -l "$file" 2>/dev/null | grep -aim 1 '^TCON=' | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' || true; })
+        genre=$({ mid3v2 -l "$file" 2>/dev/null | grep -ai '^TCON=' | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' || true; })
     fi
     
     if [[ -z "$genre" ]] && command -v exiftool &> /dev/null; then
