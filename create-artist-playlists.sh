@@ -50,7 +50,7 @@ trap 'rm -rf "$TEMP_DIR"' EXIT
 find . -type f -iname "*.mp3" -print0 | while IFS= read -r -d '' file; do
     # Use mid3v2 (from python-mutagen) to get the artist tag
     artist=$(mid3v2 -l "$file" \
-      | grep -Eim1 '^(TPE1|TP1)=' \
+      | grep -Eaim1 '^(TPE1|TP1)=' \
       | awk -F= '{print $2}' \
       | sed -e 's/\r$//' -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//')
 

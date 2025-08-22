@@ -45,7 +45,7 @@ get_artist() {
     
     # Fallback to ID3 tags
     if [[ -z "$artist" ]] && command -v mid3v2 &> /dev/null; then
-        artist=$(mid3v2 -l "$file" | grep -im 1 -E '^(TPE1|TP1)=' | awk -F= '{print $2}' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        artist=$(mid3v2 -l "$file" | grep -aim 1 -E '^(TPE1|TP1)=' | awk -F= '{print $2}' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     if [[ -z "$artist" ]] && command -v exiftool &> /dev/null; then
@@ -76,7 +76,7 @@ get_genre() {
     
     # Fallback to ID3 tags
     if [[ -z "$genre" ]] && command -v mid3v2 &> /dev/null; then
-        genre=$(mid3v2 -l "$file" | grep -im 1 '^TCON=' | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
+        genre=$(mid3v2 -l "$file" | grep -aim 1 '^TCON=' | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     if [[ -z "$genre" ]] && command -v exiftool &> /dev/null; then
