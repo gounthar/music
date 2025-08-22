@@ -184,9 +184,20 @@ if command -v beet >/dev/null 2>&1; then
     SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
     read -r -a _tok <<<"$SHEBANG_LINE"
     FIRST="${_tok[0]:-}"
-    SECOND="${_tok[1]:-}"
-    if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ] && [ -n "$SECOND" ]; then
-      PY_INTERP="$SECOND"
+    if [ "$(basename "${FIRST:-}" 2>/dev/null)" = "env" ]; then
+      # Drop 'env' and optional '-S', then pick the first python-like token.
+      _rest=("${_tok[@]:1}")
+      if [[ "${_rest[0]:-}" == "-S" ]]; then
+        _rest=("${_rest[@]:1}")
+      fi
+      PY_INTERP=""
+      for t in "${_rest[@]}"; do
+        if [[ "$t" =~ (^|/|\\)python[0-9.]*$ ]]; then
+          PY_INTERP="$t"
+          break
+        fi
+      done
+      PY_INTERP="${PY_INTERP:-${_rest[0]:-}}"
     else
       PY_INTERP="$FIRST"
     fi
