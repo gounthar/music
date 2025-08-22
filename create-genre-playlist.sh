@@ -25,7 +25,7 @@ sanitize_filename() {
     local input
     input="$1"
     # trim, remove commas/slashes/quotes/colons, replace spaces with underscores
-    echo "$input" | xargs | sed 's/[,\/]//g' | tr ' ' '_' | tr -d ':"'"'"''
+    echo "$input" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' | sed 's/[,\/]//g' | tr ' ' '_' | sed "s/['\":]//g"
 }
 
 # Function to extract artist name
@@ -40,16 +40,16 @@ get_artist() {
         local abs_path
         abs_path=$(realpath "$file")
         # shellcheck disable=SC2016
-        artist=$(beet list path:"$abs_path" -f '$artist' | head -n1 | xargs)
+        artist=$(beet list path:"$abs_path" -f '$artist' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     # Fallback to ID3 tags
     if [[ -z "$artist" ]] && command -v mid3v2 &> /dev/null; then
-        artist=$(mid3v2 -l "$file" | grep -i "TPE1\|TP1" | awk -F= '{print $2}' | head -n1 | xargs)
+        artist=$(mid3v2 -l "$file" | grep -i "TPE1\|TP1" | awk -F= '{print $2}' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     if [[ -z "$artist" ]] && command -v exiftool &> /dev/null; then
-        artist=$(exiftool -b -Artist "$file" | xargs)
+        artist=$(exiftool -b -Artist "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
 
     if [[ -z "$artist" ]]; then
@@ -71,16 +71,16 @@ get_genre() {
         local abs_path
         abs_path=$(realpath "$file")
         # shellcheck disable=SC2016
-        genre=$(beet list path:"$abs_path" -f '$genre' | head -n1 | xargs)
+        genre=$(beet list path:"$abs_path" -f '$genre' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     # Fallback to ID3 tags
     if [[ -z "$genre" ]] && command -v mid3v2 &> /dev/null; then
-        genre=$(mid3v2 -l "$file" | grep -i "TCON" | awk -F= '{print $2}' | paste -sd, - | xargs)
+        genre=$(mid3v2 -l "$file" | grep -i "TCON" | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     if [[ -z "$genre" ]] && command -v exiftool &> /dev/null; then
-        genre=$(exiftool -b -Genre "$file" | xargs)
+        genre=$(exiftool -b -Genre "$file" | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
 
     if [[ -z "$genre" ]]; then
