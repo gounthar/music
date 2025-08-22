@@ -44,7 +44,7 @@ normalize_name() {
     for variant in "${NAME_VARIANTS[@]}"; do
         name="${name//$variant/}"
     done
-    echo "$name" | tr '[:upper:]' '[:lower:]' | tr -d '[:punct:]' | sed 's/ //g'
+    echo "$name" | sed -e 'y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' -e 's/[[:punct:]]//g' -e 's/[[:space:]]//g'
 }
 
 get_metadata() {

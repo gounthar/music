@@ -14,7 +14,7 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
     if command -v beet >/dev/null 2>&1; then
         BEET_EXE="$(command -v beet)"
         PY_INTERP=""
-        if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+        if head -n1 "$BEET_EXE" | grep -aq '^#!'; then
             # Read and parse shebang interpreter safely
             SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
             # Tokenize into words
@@ -34,7 +34,7 @@ if [ -f "$SCRIPT_DIR/lib/deps.sh" ]; then
             PY_INTERP="python3"
         fi
         # Detect virtualenv; use --user only when not in venv to avoid permission issues
-        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -q 'True'; then
+        if "$PY_INTERP" -c "import sys; print(getattr(sys, \"base_prefix\", sys.prefix) != sys.prefix)" | grep -aq 'True'; then
             "$PY_INTERP" -m pip install -U pyacoustid || true
         else
             "$PY_INTERP" -m pip install -U --user pyacoustid || true
@@ -53,6 +53,10 @@ OUTPUT_DIR="${OUTPUT_DIR:-$LOSSLESS_DIR}"
 CONFIG_FILE="${BEETS_CONFIG_FILE:-$HOME/.config/beets/config.yaml}"
 if [ ! -f "$CONFIG_FILE" ]; then
 mkdir -p "$(dirname "$CONFIG_FILE")"
+ACOUSTID_YAML=""
+if [ -n "${ACOUSTID_API_KEY:-}" ]; then
+    ACOUSTID_YAML=$'acoustid:\n    apikey: '"${ACOUSTID_API_KEY}"$'\n'
+fi
 cat > "$CONFIG_FILE" <<EOL
 # ~/.config/beets/config.yaml
 directory: $OUTPUT_DIR
@@ -67,7 +71,7 @@ import:
 # Plugins: enable acoustic fingerprinting (chroma) plus fetchart, lyrics, lastgenre, discogs
 plugins: chroma fetchart lyrics lastgenre discogs
 
-fetchart:
+${ACOUSTID_YAML}fetchart:
     auto: yes
     minwidth: 0
 
@@ -79,9 +83,6 @@ lyrics:
 chroma:
     auto: yes
 
-# Optional: AcoustID API key (recommended for better lookups)
-# acoustid:
-#     apikey: YOUR_ACOUSTID_API_KEY
 
 # LastGenre plugin for better genre detection
 lastgenre:

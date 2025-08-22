@@ -24,8 +24,25 @@ fi
 sanitize_filename() {
     local input
     input="$1"
-    # trim, remove commas/slashes/quotes/colons, replace spaces with underscores
-    echo "$input" | xargs | sed 's/[,\/]//g' | tr ' ' '_' | tr -d ':"'"'"''
+    # Windows-safe sanitization:
+    # - Trim leading/trailing whitespace
+    # - Replace reserved chars \ / : * ? " < > | and control chars with underscores
+    # - Collapse any whitespace runs to single underscores
+    # - Strip trailing spaces/dots; replace leading dots with underscore
+    # - Collapse multiple underscores
+    # - Ensure non-empty; fallback to "untitled"
+    local sanitized
+    sanitized=$(printf '%s' "$input" \
+      | sed -e 's/^[[:space:]]*//; s/[[:space:]]*$//' \
+      | sed -e 's/[[:cntrl:]]/_/g' \
+      | sed -e 's/[\/\\:*?"<>|]/_/g' \
+      | tr -s '[:space:]' '_' \
+      | sed -e 's/[.[:space:]]\+$//' -e 's/^\.+/_/' -e 's/_\+/_/g' -e 's/^_*$//' )
+    if [ -z "$sanitized" ]; then
+        echo "untitled"
+    else
+        echo "$sanitized"
+    fi
 }
 
 # Function to extract artist name
@@ -40,16 +57,16 @@ get_artist() {
         local abs_path
         abs_path=$(realpath "$file")
         # shellcheck disable=SC2016
-        artist=$(beet list path:"$abs_path" -f '$artist' | head -n1 | xargs)
+        artist=$(beet list path:"$abs_path" -f '$artist' 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     # Fallback to ID3 tags
     if [[ -z "$artist" ]] && command -v mid3v2 &> /dev/null; then
-        artist=$(mid3v2 -l "$file" | grep -i "TPE1\|TP1" | awk -F= '{print $2}' | head -n1 | xargs)
+        artist=$({ mid3v2 -l "$file" 2>/dev/null | grep -aim 1 -E '^(TPE1|TP1)=' | awk -F= '{print $2}' | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' || true; })
     fi
     
     if [[ -z "$artist" ]] && command -v exiftool &> /dev/null; then
-        artist=$(exiftool -b -Artist "$file" | xargs)
+        artist=$(exiftool -b -Artist "$file" 2>/dev/null | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
 
     if [[ -z "$artist" ]]; then
@@ -71,16 +88,16 @@ get_genre() {
         local abs_path
         abs_path=$(realpath "$file")
         # shellcheck disable=SC2016
-        genre=$(beet list path:"$abs_path" -f '$genre' | head -n1 | xargs)
+        genre=$(beet list path:"$abs_path" -f '$genre' 2>/dev/null | head -n1 | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
     
     # Fallback to ID3 tags
     if [[ -z "$genre" ]] && command -v mid3v2 &> /dev/null; then
-        genre=$(mid3v2 -l "$file" | grep -i "TCON" | awk -F= '{print $2}' | paste -sd, - | xargs)
+        genre=$({ mid3v2 -l "$file" 2>/dev/null | grep -ai '^TCON=' | awk -F= '{print $2}' | paste -sd, - | sed 's/^[[:space:]]*//; s/[[:space:]]*$//' || true; })
     fi
     
     if [[ -z "$genre" ]] && command -v exiftool &> /dev/null; then
-        genre=$(exiftool -b -Genre "$file" | xargs)
+        genre=$(exiftool -b -Genre "$file" 2>/dev/null | sed 's/^[[:space:]]*//; s/[[:space:]]*$//')
     fi
 
     if [[ -z "$genre" ]]; then
