@@ -180,7 +180,7 @@ echo "==> Ensuring 'acoustid' module is present for the Python env used by 'beet
 if command -v beet >/dev/null 2>&1; then
   BEET_EXE="$(command -v beet)"
   PY_INTERP=""
-  if head -n1 "$BEET_EXE" | grep -q '^#!'; then
+  if head -n1 "$BEET_EXE" | grep -aq '^#!'; then
     SHEBANG_LINE="$(head -n1 "$BEET_EXE" | sed 's/^#!//')"
     read -r -a _tok <<<"$SHEBANG_LINE"
     FIRST="${_tok[0]:-}"
