@@ -438,5 +438,16 @@ beet import -A "$MP3_DIR"
 
 ## Notes on Style and Robustness
 
-- Scripts prefer strict mode where applicable, null-delimited loops for filenames, and explicit error handling.
-- Playlists and filenames are sanitized to avoid platform-invalid characters, with whitespace normalization as needed.
+- Strict mode: scripts prefer `set -euo pipefail` and explicit error handling.
+- Filenames: null-delimited loops (`find -print0` with `read -r -d ''`/`xargs -0`) to safely handle spaces/unicode.
+- Grep on tool output: when grepping the output of tools like `mid3v2`, the stream can contain bytes that make `grep` think it's binary. To prevent “grep: (standard input): binary file matches” warnings while still treating the stream as text, scripts use `grep -a` (aka `--binary-files=text`).
+- Pipefail-safe command substitutions: under `set -euo pipefail`, a failed pipeline inside `$()` can cause the script to exit (e.g., `grep` finds no match). Command substitutions that may legitimately yield no match are guarded so they return an empty string instead of a non-zero status, allowing downstream fallbacks to run. Example:
+  ```bash
+  artist=$({ mid3v2 -l "$file" \
+    | grep -Eaim1 '^(TPE1|TP1)=' \
+    | awk -F= '{print $2}' \
+    | sed -e 's/\r$//' -e 's/^[[:space:]]\+//' -e 's/[[:space:]]\+$//' \
+    || true; })
+  ```
+  Alternatively, end the pipeline with `|| printf ''`.
+- Sanitization: playlists and filenames are sanitized to avoid platform-invalid characters, with whitespace normalization as needed.
